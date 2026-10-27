@@ -2,7 +2,7 @@
   "name": "@caps/tools",
   "version": "0.1.0",
   "private": true,
-  "description": "가짜 참가자 봇, 자동 진행 호스트, 부하 테스트",
+  "description": "가짜 참가자 봇, 자동 진행 호스트, 부하 테스트, 화면 캡처, 시계 동기화 시뮬레이션",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -12,7 +12,9 @@
   "scripts": {
     "bots": "tsx src/bots-cli.ts",
     "load": "tsx src/load-cli.ts",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "screens": "tsx src/screens-cli.ts",
+    "clock-sim": "tsx src/clock-sim-cli.ts"
   },
   "dependencies": {
     "@caps/shared": "workspace:*",
@@ -20,6 +22,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.18.0",
+    "playwright-core": "~1.63.0",
     "tsx": "^4.20.0",
     "typescript": "^5.9.3"
   }

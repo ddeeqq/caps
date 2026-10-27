@@ -18,7 +18,11 @@ async function main() {
   console.log(`부하 테스트: ${url} · 봇 ${count}명 · ${seconds}초 · ${flow.join(' → ')}`);
   const host = new AutoHost({
     url,
-    create: { preset: 'friends', flow, settings: { nunchiRounds: 10, minorityRounds: 5, tiltraceLength: 30 } },
+    create: {
+      preset: 'friends',
+      flow,
+      settings: { nunchiRounds: 10, minorityRounds: 5, tiltraceLength: 30 },
+    },
     waitForPlayers: count,
     introMs: 1_500,
     resultMs: 2_000,
@@ -31,12 +35,17 @@ async function main() {
   const joinTimes: number[] = [];
   const batch = 20;
   for (let i = 0; i < count; i += batch) {
-    const group = Array.from({ length: Math.min(batch, count - i) }, () => new Bot({ url, code, hub, chatty: true }));
+    const group = Array.from(
+      { length: Math.min(batch, count - i) },
+      () => new Bot({ url, code, hub, chatty: true }),
+    );
     const times = await Promise.all(group.map((b) => b.join()));
     joinTimes.push(...times);
     bots.push(...group);
   }
-  console.log(`입장 완료: p50 ${percentile(joinTimes, 50).toFixed(0)}ms, p95 ${percentile(joinTimes, 95).toFixed(0)}ms`);
+  console.log(
+    `입장 완료: p50 ${percentile(joinTimes, 50).toFixed(0)}ms, p95 ${percentile(joinTimes, 95).toFixed(0)}ms`,
+  );
 
   const rtts: number[] = [];
   const ticks: number[] = [];
@@ -58,10 +67,16 @@ async function main() {
   const received = bots.reduce((a, b) => a + b.received, 0) - startReceived;
 
   console.log('\n\n── 결과 ──');
-  console.log(`핑 왕복: p50 ${percentile(rtts, 50).toFixed(1)}ms · p95 ${percentile(rtts, 95).toFixed(1)}ms · 최대 ${Math.max(...rtts).toFixed(1)}ms (${rtts.length}회)`);
-  console.log(`수신 메시지: 봇당 초당 ${(received / bots.length / elapsed).toFixed(1)}개 (전체 ${(received / elapsed).toFixed(0)}개/초)`);
+  console.log(
+    `핑 왕복: p50 ${percentile(rtts, 50).toFixed(1)}ms · p95 ${percentile(rtts, 95).toFixed(1)}ms · 최대 ${Math.max(...rtts).toFixed(1)}ms (${rtts.length}회)`,
+  );
+  console.log(
+    `수신 메시지: 봇당 초당 ${(received / bots.length / elapsed).toFixed(1)}개 (전체 ${(received / elapsed).toFixed(0)}개/초)`,
+  );
   if (ticks.length) {
-    console.log(`서버 틱 처리: 평균 ${(ticks.reduce((a, b) => a + b, 0) / ticks.length).toFixed(2)}ms · 최대 ${Math.max(...ticks).toFixed(2)}ms (틱 간격 50ms)`);
+    console.log(
+      `서버 틱 처리: 평균 ${(ticks.reduce((a, b) => a + b, 0) / ticks.length).toFixed(2)}ms · 최대 ${Math.max(...ticks).toFixed(2)}ms (틱 간격 50ms)`,
+    );
   }
   console.log(`진행 단계: ${host.room?.phase} ${host.room?.gameId ?? ''}`);
   for (const b of bots) b.stop();

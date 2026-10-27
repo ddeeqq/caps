@@ -9,7 +9,14 @@
  * 옵션: --url 서버 주소(기본 http://localhost:3001), --web 웹 주소(개발 중엔 http://localhost:5173),
  *       --preset friends|work|class, --speed 반응 속도 배율, --no-auto 자동 진행 끄기
  */
-import { DEFAULT_FLOW, GAME_IDS, GAME_META, NEW_PEOPLE_BUCKETS, type GameId, type PresetId } from '@caps/shared';
+import {
+  DEFAULT_FLOW,
+  GAME_IDS,
+  GAME_META,
+  NEW_PEOPLE_BUCKETS,
+  type GameId,
+  type PresetId,
+} from '@caps/shared';
 import { arg, flag } from './args';
 import { AutoHost, Bot, BotHub, FAST_SETTINGS, sleep } from './bot';
 
@@ -46,7 +53,9 @@ async function main() {
       waitForPlayers: count,
       onPhase: (s) => {
         const name = s.gameId ? GAME_META[s.gameId].title : '';
-        console.log(`  [${new Date().toLocaleTimeString()}] ${s.phase}${name ? ` · ${name}` : ''} (참가 ${s.playerCount}명)`);
+        console.log(
+          `  [${new Date().toLocaleTimeString()}] ${s.phase}${name ? ` · ${name}` : ''} (참가 ${s.playerCount}명)`,
+        );
       },
     });
     const created = await host.create();
@@ -82,7 +91,9 @@ async function main() {
     for (const g of report?.games ?? []) console.log(`· ${g.title}: ${g.headline}`);
     if (report) {
       const s = report.survey;
-      console.log(`\n참여 유지율 ${report.retention}% · 대면 연결 ${report.metrics.faceToFace}회 · 리액션 ${report.metrics.reactions}개`);
+      console.log(
+        `\n참여 유지율 ${report.retention}% · 대면 연결 ${report.metrics.faceToFace}회 · 리액션 ${report.metrics.reactions}개`,
+      );
       console.log(`편안함 ${s.lobby.avg ?? '-'} → ${s.end.avg ?? '-'}`);
       console.log(
         `새로 대화한 사람: ${s.end.newPeople.map((n, i) => `${NEW_PEOPLE_BUCKETS[i]} ${n}명`).join(', ')}`,

@@ -84,7 +84,10 @@ export class ClockClient {
 /** 같은 프로세스의 봇끼리 "말로 나누는 정보"를 흉내 내는 공유 메모 */
 export class BotHub {
   private sounds = new Map<string, Map<string, string>>();
-  private vault = new Map<string, { order?: string[]; table?: Array<{ symbol: string; digit: number }>; rule?: string }>();
+  private vault = new Map<
+    string,
+    { order?: string[]; table?: Array<{ symbol: string; digit: number }>; rule?: string }
+  >();
 
   registerSound(key: string, playerId: string, code: string): void {
     if (!code) return;
@@ -94,7 +97,9 @@ export class BotHub {
   }
 
   sameSound(key: string, me: string): string[] {
-    return [...(this.sounds.get(key) ?? new Map<string, string>()).entries()].filter(([id]) => id !== me).map(([, c]) => c);
+    return [...(this.sounds.get(key) ?? new Map<string, string>()).entries()]
+      .filter(([id]) => id !== me)
+      .map(([, c]) => c);
   }
 
   otherSounds(key: string): string[] {
@@ -118,7 +123,11 @@ export function parseRule(text: string | null | undefined): VaultRule | null {
   return null;
 }
 
-function solveVault(order: string[], table: Array<{ symbol: string; digit: number }>, ruleText?: string): string {
+function solveVault(
+  order: string[],
+  table: Array<{ symbol: string; digit: number }>,
+  ruleText?: string,
+): string {
   const raw = order.map((sym) => table.find((e) => e.symbol === sym)?.digit ?? 0);
   const rule = parseRule(ruleText);
   if (rule?.kind === 'nineMinus') rule.pos = raw.length - 1;
@@ -178,8 +187,9 @@ export class Bot {
     const started = performance.now();
     await waitConnected(this.socket);
     await this.clock.sync(5, 30);
-    const res = await new Promise<Parameters<Parameters<ClientToServerEvents['player:join']>[1]>[0]>((resolve) =>
-      this.socket.emit('player:join', { code: this.opts.code, nickname: this.opts.nickname }, resolve),
+    const res = await new Promise<Parameters<Parameters<ClientToServerEvents['player:join']>[1]>[0]>(
+      (resolve) =>
+        this.socket.emit('player:join', { code: this.opts.code, nickname: this.opts.nickname }, resolve),
     );
     if (!res.ok) throw new Error(res.message);
     this.playerId = res.playerId;
@@ -231,7 +241,8 @@ export class Bot {
     if (!r) return;
     if (r.phase === 'lobby' && !this.memo.has('survey-lobby')) {
       this.memo.set('survey-lobby', 1);
-      if (Math.random() < 0.8) this.socket.emit('player:survey', { phase: 'lobby', comfort: 2 + Math.floor(Math.random() * 3) });
+      if (Math.random() < 0.8)
+        this.socket.emit('player:survey', { phase: 'lobby', comfort: 2 + Math.floor(Math.random() * 3) });
     }
     if (r.phase === 'finished' && !this.memo.has('survey-end')) {
       this.memo.set('survey-end', 1);
@@ -335,7 +346,8 @@ export class Bot {
     this.done('seat', 2_000);
     const taken = new Set(v.taken.map(([r, c]) => `${r}:${c}`));
     const free: Array<[number, number]> = [];
-    for (let r = 0; r < v.rows; r++) for (let c = 0; c < v.cols; c++) if (!taken.has(`${r}:${c}`)) free.push([r, c]);
+    for (let r = 0; r < v.rows; r++)
+      for (let c = 0; c < v.cols; c++) if (!taken.has(`${r}:${c}`)) free.push([r, c]);
     const pick = free[Math.floor(Math.random() * free.length)] ?? [0, 0];
     this.send({ type: 'seat', row: pick[0], col: pick[1] });
   }
@@ -344,7 +356,8 @@ export class Bot {
     if (v.stage !== 'talk' && v.stage !== 'vote') return;
     const choice = Math.random() < 0.5 ? 'a' : 'b';
     if (v.alive && !v.myVote && this.ready(`mv:${v.round}`, 200, 1800)) this.send({ type: 'vote', choice });
-    if (!v.alive && !v.myPrediction && this.ready(`mp:${v.round}`, 200, 1800)) this.send({ type: 'predict', choice });
+    if (!v.alive && !v.myPrediction && this.ready(`mp:${v.round}`, 200, 1800))
+      this.send({ type: 'predict', choice });
   }
 
   private tiltrace(v: TiltracePlayerView): void {
@@ -408,8 +421,8 @@ export class AutoHost {
   async create(): Promise<{ code: string; hostToken: string; hostPin: string }> {
     await waitConnected(this.socket);
     await this.clock.sync(5, 30);
-    const res = await new Promise<Parameters<Parameters<ClientToServerEvents['host:create']>[1]>[0]>((resolve) =>
-      this.socket.emit('host:create', this.opts.create, resolve),
+    const res = await new Promise<Parameters<Parameters<ClientToServerEvents['host:create']>[1]>[0]>(
+      (resolve) => this.socket.emit('host:create', this.opts.create, resolve),
     );
     if (!res.ok) throw new Error(res.message);
     this.code = res.code;
@@ -456,7 +469,10 @@ export class AutoHost {
   untilFinished(timeoutMs: number): Promise<RoomState> {
     if (this.room?.phase === 'finished') return Promise.resolve(this.room);
     return new Promise((resolve, reject) => {
-      const t = setTimeout(() => reject(new Error(`시간 안에 끝나지 않음 (현재 ${this.phaseKey})`)), timeoutMs);
+      const t = setTimeout(
+        () => reject(new Error(`시간 안에 끝나지 않음 (현재 ${this.phaseKey})`)),
+        timeoutMs,
+      );
       this.finishResolvers.push((s) => {
         clearTimeout(t);
         resolve(s);

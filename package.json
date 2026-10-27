@@ -17,7 +17,9 @@
     "typecheck": "pnpm -r typecheck",
     "bots": "pnpm --filter @caps/tools bots",
     "load": "pnpm --filter @caps/tools load",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "screens": "pnpm --filter @caps/tools screens",
+    "clock-sim": "pnpm --filter @caps/tools clock-sim"
   },
   "devDependencies": {
     "prettier": "^3.6.2",

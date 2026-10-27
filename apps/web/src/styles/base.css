@@ -1,0 +1,370 @@
+/* ─────────────────────────────────────────────
+   말문 디자인 토큰
+   잉크(글자·테두리) · 햇살(무대) · 풍선껌(행동) · 소다 · 민트(성공) · 코랄(벌칙)
+   제목급 순간에만 예능 자막체(Black Han Sans + 잉크 테두리 + 색 그림자)를 쓴다.
+   ───────────────────────────────────────────── */
+:root {
+  --ink: #1b1a3a;
+  --ink-2: #3d3c66;
+  --ink-3: #6f6e94;
+  --line: rgb(27 26 58 / 14%);
+  --sun: #ffd93b;
+  --sun-2: #fff0a3;
+  --gum: #ff4f8b;
+  --gum-2: #ffd3e2;
+  --soda: #3ec1f3;
+  --soda-2: #d2f1fd;
+  --mint: #3dd9a0;
+  --mint-2: #cdf6e6;
+  --coral: #ff6a3d;
+  --coral-2: #ffd9cc;
+  --paper: #ffffff;
+  --night: #16152f;
+  --water: #1f8fd0;
+
+  --font-display: 'Black Han Sans', 'Pretendard Variable', system-ui, sans-serif;
+  --font-body:
+    'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo',
+    'Noto Sans KR', system-ui, sans-serif;
+
+  --r-sm: 12px;
+  --r-md: 18px;
+  --r-lg: 28px;
+  --r-pill: 999px;
+  --press: 0 4px 0 var(--ink);
+  --focus: 0 0 0 4px rgb(62 193 243 / 70%);
+
+  /* 1.25 비율 타입 스케일 */
+  --t-xs: 0.8rem;
+  --t-sm: 0.9rem;
+  --t-md: 1rem;
+  --t-lg: 1.25rem;
+  --t-xl: 1.5625rem;
+  --t-2xl: 1.953rem;
+  --t-3xl: 2.441rem;
+  --t-4xl: 3.052rem;
+  --t-5xl: 3.815rem;
+
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 17px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--paper);
+  line-height: 1.55;
+  /* 한국어는 어절 단위로 줄바꿈 ("스/캔!" 같은 끊김 방지) */
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h2 {
+  font-size: var(--t-xl);
+  line-height: 1.25;
+  font-weight: 800;
+}
+
+h3 {
+  font-size: var(--t-lg);
+  line-height: 1.3;
+  font-weight: 750;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+:focus-visible {
+  outline: 3px solid var(--soda);
+  outline-offset: 3px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ── 예능 자막 ───────────────────────────────
+   테두리는 -webkit-text-stroke 대신 16방향 그림자 고리로 그린다.
+   (text-stroke + 색 그림자를 같이 쓰면 크롬이 그림자를 테두리 위에 칠해서 글자 속이 비어 보인다)
+   먼저 적은 그림자가 위에 그려지므로: 잉크 고리 → 색 그림자 순서. */
+.caption {
+  --cap-line: var(--ink);
+  --cap-drop: var(--gum);
+  --o: 0.06em;
+  --d: 0.115em;
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1.04;
+  letter-spacing: 0.02em;
+  color: var(--paper);
+  text-shadow:
+    var(--o) 0 0 var(--cap-line),
+    calc(var(--o) * 0.924) calc(var(--o) * 0.383) 0 var(--cap-line),
+    calc(var(--o) * 0.707) calc(var(--o) * 0.707) 0 var(--cap-line),
+    calc(var(--o) * 0.383) calc(var(--o) * 0.924) 0 var(--cap-line),
+    0 var(--o) 0 var(--cap-line),
+    calc(var(--o) * -0.383) calc(var(--o) * 0.924) 0 var(--cap-line),
+    calc(var(--o) * -0.707) calc(var(--o) * 0.707) 0 var(--cap-line),
+    calc(var(--o) * -0.924) calc(var(--o) * 0.383) 0 var(--cap-line),
+    calc(var(--o) * -1) 0 0 var(--cap-line),
+    calc(var(--o) * -0.924) calc(var(--o) * -0.383) 0 var(--cap-line),
+    calc(var(--o) * -0.707) calc(var(--o) * -0.707) 0 var(--cap-line),
+    calc(var(--o) * -0.383) calc(var(--o) * -0.924) 0 var(--cap-line),
+    0 calc(var(--o) * -1) 0 var(--cap-line),
+    calc(var(--o) * 0.383) calc(var(--o) * -0.924) 0 var(--cap-line),
+    calc(var(--o) * 0.707) calc(var(--o) * -0.707) 0 var(--cap-line),
+    calc(var(--o) * 0.924) calc(var(--o) * -0.383) 0 var(--cap-line),
+    calc(var(--d) * 0.85) var(--d) 0 var(--cap-drop);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+.caption--sun {
+  color: var(--sun);
+  --cap-drop: var(--ink);
+}
+.caption--mint {
+  color: var(--mint);
+  --cap-drop: var(--ink);
+}
+.caption--coral {
+  color: var(--coral);
+  --cap-drop: var(--ink);
+}
+.caption--soda {
+  color: var(--paper);
+  --cap-drop: var(--soda);
+}
+.caption--ink {
+  color: var(--ink);
+  text-shadow: 0.05em 0.06em 0 var(--sun);
+}
+
+/* ── 버튼: 눌리는 키처럼 아래로 꺼지는 그림자 ─── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45em;
+  min-height: 52px;
+  padding: 0.7em 1.35em;
+  border: 3px solid var(--ink);
+  border-radius: var(--r-pill);
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: var(--t-lg);
+  line-height: 1.1;
+  text-decoration: none;
+  box-shadow: var(--press);
+  transition:
+    transform 80ms ease,
+    box-shadow 80ms ease;
+  user-select: none;
+  touch-action: manipulation;
+}
+.btn:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+.btn:disabled,
+.btn--primary:disabled,
+.btn--sun:disabled,
+.btn--mint:disabled,
+.btn--soda:disabled {
+  background: #ecebf3;
+  color: var(--ink-3);
+  border-color: #b9b8cf;
+  box-shadow: none;
+  transform: translateY(3px);
+  cursor: not-allowed;
+}
+.btn--primary {
+  background: var(--gum);
+  color: var(--paper);
+}
+.btn--sun {
+  background: var(--sun);
+}
+.btn--mint {
+  background: var(--mint);
+}
+.btn--soda {
+  background: var(--soda);
+}
+.btn--small {
+  min-height: 40px;
+  padding: 0.45em 0.95em;
+  font-size: var(--t-md);
+  border-width: 2.5px;
+  box-shadow: 0 3px 0 var(--ink);
+}
+.btn--block {
+  width: 100%;
+}
+.btn--quiet {
+  border-color: transparent;
+  box-shadow: none;
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 650;
+}
+.btn--quiet:active:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+}
+
+/* ── 입력 ─────────────────────────────── */
+.field {
+  display: grid;
+  gap: 6px;
+}
+.field__label {
+  font-weight: 750;
+  font-size: var(--t-md);
+}
+.field__hint {
+  font-size: var(--t-sm);
+  color: var(--ink-3);
+}
+.input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0.6em 0.9em;
+  border: 3px solid var(--ink);
+  border-radius: var(--r-md);
+  background: var(--paper);
+  font-size: var(--t-lg);
+  font-weight: 650;
+}
+.input:focus {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.input--code {
+  font-family: var(--font-display);
+  font-size: var(--t-3xl);
+  letter-spacing: 0.25em;
+  text-align: center;
+  text-transform: uppercase;
+}
+.input::placeholder {
+  color: #a3a2bf;
+  font-weight: 500;
+}
+.input--code::placeholder {
+  color: #cfcee0;
+}
+
+/* ── 공통 조각 ─────────────────────────── */
+.panel {
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: var(--r-lg);
+  padding: 20px;
+}
+.muted {
+  color: var(--ink-3);
+}
+.error-text {
+  color: #c0262d;
+  font-weight: 700;
+}
+.stack {
+  display: grid;
+  gap: 12px;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.dot {
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  flex: none;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  max-width: min(92vw, 520px);
+  padding: 12px 18px;
+  border-radius: var(--r-md);
+  border: 3px solid var(--ink);
+  background: var(--paper);
+  font-weight: 750;
+  box-shadow: var(--press);
+  z-index: 50;
+  text-align: center;
+}
+
+.banner {
+  padding: 10px 16px;
+  background: var(--coral);
+  color: var(--paper);
+  font-weight: 750;
+  text-align: center;
+  border-bottom: 3px solid var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}

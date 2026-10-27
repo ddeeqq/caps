@@ -1,0 +1,1156 @@
+/* ════════════ 게임 ① 눈치게임 ════════════ */
+.nunchi-host {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+.nunchi-host__round {
+  font-weight: 800;
+  font-size: 1.3em;
+}
+.nunchi-host__center {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 0.6em;
+  text-align: center;
+}
+.nunchi-host__count {
+  font-size: 16em;
+}
+.nunchi-host__hint {
+  font-size: 1.8em;
+  font-weight: 800;
+}
+.nunchi-host__label {
+  font-size: 1.5em;
+  font-weight: 800;
+}
+.nunchi-host__number {
+  font-size: 14em;
+}
+.nunchi-host__claims {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5em;
+}
+.nunchi-host__claims li {
+  padding: 0.3em 0.9em;
+  border: 3px solid var(--ink);
+  border-radius: var(--r-pill);
+  background: var(--c, #fff);
+  font-weight: 800;
+  font-size: 1.2em;
+  animation: stick 360ms cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+.nunchi-host__claims b {
+  font-family: var(--font-display);
+  font-weight: 400;
+}
+.nunchi-host__progress {
+  font-weight: 700;
+  color: var(--stage-muted);
+}
+.nunchi-host__outcome {
+  font-size: 9em;
+  animation: slam 380ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+@keyframes slam {
+  from {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.nunchi-host__losers {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.8em;
+}
+.nunchi-host__losers li {
+  display: grid;
+  padding: 0.5em 1.1em;
+  border: 3px solid var(--ink);
+  border-radius: var(--r-md);
+  background: var(--paper);
+  border-left: 0.6em solid var(--c, var(--gum));
+  text-align: left;
+}
+.nunchi-host__losers strong {
+  font-size: 1.6em;
+}
+.collision {
+  width: min(48em, 80vw);
+  display: grid;
+  gap: 0.4em;
+}
+.collision__gap {
+  font-family: var(--font-display);
+  font-size: 2.6em;
+}
+.collision__track {
+  position: relative;
+  height: calc(4.2em + (var(--levels, 1) - 1) * 2.6em);
+  border-bottom: 4px solid var(--ink);
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 calc(10% - 2px),
+    rgb(27 26 58 / 18%) calc(10% - 2px) 10%
+  );
+}
+.collision__dot {
+  position: absolute;
+  bottom: -0.65em;
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  gap: 0.1em;
+  animation: drop 420ms calc(var(--i) * 140ms) cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+.collision__dot::after {
+  content: '';
+  order: 3;
+  width: 1.2em;
+  height: 1.2em;
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+  background: var(--c, var(--gum));
+}
+.collision__label {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  margin-bottom: calc(var(--lift, 0) * 2.6em);
+}
+/* 층을 올린 이름표와 점을 잇는 가는 선 */
+.collision__label::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 2px;
+  height: calc(var(--lift, 0) * 2.6em + 0.1em);
+  background: var(--ink);
+  opacity: 0.5;
+}
+.collision__dot b {
+  white-space: nowrap;
+  font-size: 1em;
+}
+.collision__dot i {
+  font-style: normal;
+  font-size: 0.8em;
+  font-weight: 700;
+}
+@keyframes drop {
+  from {
+    transform: translate(-50%, -2em);
+    opacity: 0;
+  }
+}
+.collision__scale {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  color: var(--stage-muted);
+}
+
+.nunchi-player {
+  display: grid;
+  gap: 16px;
+  justify-items: center;
+  text-align: center;
+}
+.nunchi-player__round {
+  font-weight: 800;
+}
+.big-tap {
+  width: min(84vw, 380px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 5px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 10px 0 #0c0b22;
+  touch-action: manipulation;
+  transition:
+    background 120ms ease,
+    transform 60ms ease,
+    box-shadow 60ms ease;
+}
+.big-tap.is-open {
+  background: var(--gum);
+}
+.big-tap.is-open:active:not(:disabled) {
+  transform: translateY(8px);
+  box-shadow: 0 2px 0 #0c0b22;
+}
+.big-tap.is-done {
+  background: var(--mint);
+  color: var(--ink);
+  transform: translateY(8px);
+  box-shadow: 0 2px 0 #0c0b22;
+}
+.big-tap:disabled {
+  cursor: default;
+}
+.big-tap__label {
+  font-size: clamp(3rem, 16vw, 4.6rem);
+}
+.big-tap__count {
+  font-size: clamp(5rem, 30vw, 8rem);
+}
+.big-tap__done {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 16vw, 4.6rem);
+}
+.nunchi-player__hint {
+  font-weight: 750;
+  font-size: var(--t-lg);
+}
+
+/* ════════════ 게임 ② 소리 짝꿍 ════════════ */
+.sm-host {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 1em;
+}
+.sm-host__head {
+  display: flex;
+  align-items: flex-end;
+  gap: 2em;
+}
+.sm-host__label {
+  font-weight: 800;
+  font-size: 1.2em;
+}
+.sm-host__count {
+  font-family: var(--font-display);
+  font-size: 3em;
+  line-height: 1;
+}
+.sm-host__time {
+  font-family: var(--font-display);
+  font-size: 3em;
+  line-height: 1;
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+.sm-host__stats {
+  display: flex;
+  gap: 1.2em;
+  margin: 0;
+}
+.sm-host__stats div {
+  text-align: center;
+}
+.sm-host__stats dt {
+  font-weight: 700;
+  font-size: 0.85em;
+}
+.sm-host__stats dd {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 2em;
+  line-height: 1;
+}
+.sm-host__teams {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15em, 1fr));
+  gap: 0.9em;
+  align-content: start;
+}
+.team-card {
+  display: flex;
+  gap: 0.7em;
+  padding: 0.8em 1em;
+  border: 3px solid var(--ink);
+  border-radius: var(--r-lg);
+  background: var(--paper);
+}
+.team-card.is-complete {
+  background: var(--c);
+  box-shadow: var(--press);
+  animation: stick 420ms cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+.team-card__icon {
+  font-size: 2.6em;
+  line-height: 1;
+}
+.team-card__body {
+  display: grid;
+  gap: 0.2em;
+  min-width: 0;
+}
+.team-card__name {
+  font-weight: 800;
+  font-size: 1.15em;
+}
+.team-card__dots {
+  display: flex;
+  gap: 0.3em;
+}
+.team-card__dots i {
+  width: 0.9em;
+  height: 0.9em;
+  border-radius: 50%;
+  border: 2.5px solid var(--ink);
+  background: var(--paper);
+}
+.team-card__dots i.on {
+  background: var(--ink);
+}
+.team-card__meta,
+.team-card__mission {
+  font-weight: 700;
+  font-size: 0.9em;
+}
+.team-card__tally b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.3em;
+}
+
+.sm-player {
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  text-align: center;
+}
+.sm-player__progress {
+  font-size: var(--t-lg);
+  font-weight: 750;
+}
+.sm-player__progress b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.6em;
+}
+.sound-btn {
+  width: min(78vw, 320px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 5px solid var(--ink);
+  background: var(--sun);
+  display: grid;
+  place-content: center;
+  gap: 6px;
+  box-shadow: 0 10px 0 var(--ink);
+  touch-action: manipulation;
+}
+.sound-btn:active {
+  transform: translateY(8px);
+  box-shadow: 0 2px 0 var(--ink);
+}
+.sound-btn__label {
+  font-size: clamp(2.4rem, 12vw, 3.4rem);
+}
+.sound-btn__sub {
+  font-weight: 700;
+  font-size: var(--t-sm);
+}
+.sm-player__text {
+  font-size: clamp(2.6rem, 14vw, 4rem);
+}
+.sm-player__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+}
+.sm-player__actions .btn {
+  font-size: var(--t-md);
+  padding-inline: 0.6em;
+}
+.sm-player__manual {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  width: 100%;
+}
+.timerbar {
+  width: 100%;
+  height: 14px;
+  border: 3px solid var(--ink);
+  border-radius: var(--r-pill);
+  background: var(--paper);
+  overflow: hidden;
+}
+.timerbar__fill {
+  height: 100%;
+  transition: width 250ms linear;
+}
+.scanner {
+  position: relative;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  border: 3px solid var(--ink);
+  background: #000;
+  aspect-ratio: 3 / 4;
+}
+.scanner__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.scanner__frame {
+  position: absolute;
+  inset: 22%;
+  border: 4px solid var(--sun);
+  border-radius: var(--r-md);
+  box-shadow: 0 0 0 999px rgb(0 0 0 / 35%);
+}
+.team-done {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  text-align: center;
+  padding: 22px 16px;
+  border: 4px solid var(--ink);
+  border-radius: var(--r-lg);
+  background: var(--c);
+}
+.team-done__icon {
+  font-size: 4rem;
+  line-height: 1;
+}
+.team-done__name {
+  font-size: clamp(2.2rem, 11vw, 3.2rem);
+}
+.team-done__rank,
+.team-done__mates {
+  font-weight: 800;
+}
+.mission {
+  width: 100%;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: var(--r-lg);
+}
+.mission__label {
+  font-weight: 800;
+  color: var(--ink-2);
+}
+.mission__prompt {
+  font-size: var(--t-xl);
+  font-weight: 800;
+}
+.mission__choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.mission__decided {
+  font-family: var(--font-display);
+  font-size: var(--t-2xl);
+}
+
+/* ════════════ 게임 ③ 금고 따기 ════════════ */
+.vault-host {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 1em;
+}
+.vault-host__title {
+  font-size: 4em;
+}
+.vault-host__sub {
+  font-weight: 700;
+  font-size: 1.2em;
+  color: var(--stage-muted);
+}
+.vault-host__teams {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.6em;
+  align-content: start;
+}
+.vault-row {
+  display: grid;
+  grid-template-columns: minmax(10em, 1.1fr) auto minmax(12em, 1.4fr);
+  align-items: center;
+  gap: 1.2em;
+  padding: 0.6em 1em;
+  border-radius: var(--r-lg);
+  background: rgb(255 255 255 / 8%);
+  border: 3px solid rgb(255 255 255 / 25%);
+}
+.vault-row.is-solved {
+  border-color: var(--mint);
+}
+.vault-row.is-failed {
+  border-color: var(--coral);
+}
+.vault-row__name {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  font-size: 1.2em;
+}
+.vault-row__safes {
+  display: flex;
+  gap: 0.4em;
+}
+.safe {
+  width: 1.8em;
+  height: 1.8em;
+  border-radius: 0.4em;
+  border: 3px solid #fff;
+  position: relative;
+}
+.safe--open {
+  background: var(--mint);
+}
+.safe--fail {
+  background: var(--coral);
+}
+.safe--now {
+  background: var(--sun);
+  animation: pulse 1s ease-in-out infinite;
+}
+.safe--wait {
+  opacity: 0.4;
+}
+@keyframes pulse {
+  50% {
+    transform: scale(0.85);
+  }
+}
+.vault-row__time {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.8em;
+}
+.vault-row__state {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  min-width: 6em;
+  text-align: right;
+}
+.vault-host__foot {
+  display: flex;
+  gap: 2em;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+.vault-host__lead {
+  font-size: 1.3em;
+  font-weight: 700;
+}
+
+.vault-player {
+  display: grid;
+  gap: 12px;
+}
+.vault-player__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+}
+.vault-player__team {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.vault-player__time {
+  font-family: var(--font-display);
+  font-size: var(--t-2xl);
+  font-variant-numeric: tabular-nums;
+}
+.vault-player__roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.role-chip {
+  padding: 4px 12px;
+  border-radius: var(--r-pill);
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 750;
+}
+.peek {
+  min-height: 170px;
+  display: grid;
+  place-items: center;
+  padding: 14px;
+  border: 4px dashed var(--ink);
+  border-radius: var(--r-lg);
+  background: var(--sun-2);
+  touch-action: none;
+}
+.peek.is-shown {
+  border-style: solid;
+  background: var(--paper);
+}
+.peek__cover {
+  font-size: var(--t-xl);
+  font-weight: 800;
+  text-align: center;
+}
+.peek__content {
+  width: 100%;
+  display: grid;
+  gap: 14px;
+}
+.peek__title {
+  font-weight: 800;
+  color: var(--ink-2);
+  margin-bottom: 4px;
+}
+.seq {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: seq;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.seq li {
+  counter-increment: seq;
+  padding: 8px 12px;
+  border: 3px solid var(--ink);
+  border-radius: var(--r-md);
+  font-size: var(--t-xl);
+  font-weight: 800;
+}
+.seq li::before {
+  content: counter(seq) '. ';
+  color: var(--gum);
+  font-family: var(--font-display);
+  font-weight: 400;
+}
+.table {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.table li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-sm);
+  font-weight: 750;
+}
+.table b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--t-xl);
+}
+.peek__rule {
+  font-size: var(--t-lg);
+  font-weight: 800;
+}
+.keypad-wrap {
+  display: grid;
+  gap: 10px;
+}
+.slots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.slot {
+  width: 56px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  border: 3px solid var(--ink);
+  border-radius: var(--r-md);
+  font-family: var(--font-display);
+  font-size: 2rem;
+  background: var(--paper);
+}
+.slot.is-filled {
+  background: var(--sun);
+}
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.keypad button {
+  min-height: 58px;
+  border: 3px solid var(--ink);
+  border-radius: var(--r-md);
+  background: var(--paper);
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  box-shadow: 0 3px 0 var(--ink);
+  touch-action: manipulation;
+}
+.keypad button:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+.keypad button:disabled {
+  opacity: 0.45;
+}
+.keypad .keypad__open {
+  background: var(--gum);
+  color: var(--paper);
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: var(--t-lg);
+}
+.roster {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+  border-top: 2px solid var(--line);
+  padding-top: 10px;
+}
+.roster li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 650;
+}
+.roster li.is-me {
+  font-weight: 850;
+}
+
+/* ════════════ 게임 ④ 카드섹션 ════════════ */
+.cs-host {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 0.6em;
+  justify-items: center;
+}
+.cs-host__head {
+  text-align: center;
+  display: grid;
+  gap: 0.3em;
+}
+.cs-host__title {
+  font-size: 3.6em;
+}
+.cs-host__label {
+  font-size: 1.4em;
+  font-weight: 800;
+}
+.cs-host__front {
+  padding: 0.2em 2em;
+  border-radius: var(--r-pill);
+  background: rgb(255 255 255 / 12%);
+  font-weight: 700;
+}
+/* 칸은 세로로 든 폰 비율(3:4). 남은 높이에 맞춰 격자 폭을 정한다: 높이 × 열/행 × 0.75 */
+.cs-grid {
+  display: grid;
+  gap: 0.4em;
+  width: min(92%, calc((100dvh - 17em) * var(--cols) / var(--rows) * 0.75));
+  align-self: start;
+}
+.cs-cell {
+  aspect-ratio: 3 / 4;
+  border-radius: 0.5em;
+  border: 2px solid rgb(255 255 255 / 18%);
+  background: rgb(255 255 255 / 6%);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 1.6em;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.cs-cell.is-taken {
+  padding: 0.3em;
+  background: var(--c);
+  color: var(--ink);
+  border-color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.85em;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  white-space: normal;
+}
+.cs-grid.is-show .cs-cell {
+  border-color: transparent;
+  font-size: min(3.2em, 9vh);
+}
+.cs-host__timeline {
+  width: min(92%, 60em);
+  display: grid;
+  gap: 0.3em;
+}
+.cs-host__segments {
+  display: flex;
+  font-size: 0.8em;
+  font-weight: 700;
+  color: var(--stage-muted);
+}
+.cs-host__segments span {
+  flex-basis: 0;
+  text-align: center;
+}
+.cs-host__track {
+  height: 0.6em;
+  border-radius: var(--r-pill);
+  background: rgb(255 255 255 / 15%);
+  overflow: hidden;
+}
+.cs-host__fill {
+  height: 100%;
+  width: 0;
+  background: var(--sun);
+}
+.cs-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  background: #000;
+  color: #fff;
+  overflow: hidden;
+}
+.cs-stage__text {
+  font-family: var(--font-display);
+  font-size: min(70vw, 62vh);
+  line-height: 1;
+}
+.cs-stage__text.is-small {
+  font-size: min(16vw, 12vh);
+  padding: 0 0.3em;
+}
+.cs-stage__note {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(40px + env(safe-area-inset-bottom));
+  font-weight: 800;
+  font-size: var(--t-xl);
+  color: #fff;
+  mix-blend-mode: difference;
+}
+/* 자리 고르기: 연출 직전이라 폰은 이미 검은 화면. 글자는 밝게 */
+.seat-pick {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 28px 16px calc(24px + env(safe-area-inset-bottom));
+  text-align: center;
+  color: var(--paper);
+}
+.seat-pick h2 {
+  font-size: var(--t-2xl);
+}
+.seat-pick .muted {
+  color: #b9b8dc;
+}
+.seat-pick__front {
+  justify-self: center;
+  padding: 4px 24px;
+  border-radius: var(--r-pill);
+  background: var(--sun);
+  color: var(--ink);
+  font-weight: 800;
+}
+.seat-grid {
+  display: grid;
+  gap: 6px;
+}
+.seat {
+  aspect-ratio: 1;
+  border: 2.5px solid #4a4970;
+  border-radius: 8px;
+  background: var(--paper);
+  padding: 0;
+}
+.seat.is-taken {
+  background: #2c2b4d;
+}
+.seat.is-mine {
+  background: var(--gum);
+  border-color: var(--sun);
+  box-shadow: 0 0 0 3px var(--sun);
+}
+.seat-pick__state {
+  font-weight: 800;
+  font-size: var(--t-lg);
+}
+
+/* ════════════ 추가: 소수결 서바이벌 ════════════ */
+.mino-host {
+  position: relative;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.9em;
+  text-align: center;
+}
+.mino-host__head {
+  display: flex;
+  align-items: baseline;
+  gap: 2em;
+  font-size: 1.3em;
+  font-weight: 800;
+}
+.mino-host__head b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.4em;
+}
+.mino-host__prompt {
+  font-size: 2.2em;
+  font-weight: 800;
+}
+.mino-host__sides {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2em;
+  width: min(60em, 90%);
+}
+.side {
+  display: grid;
+  align-content: center;
+  gap: 0.3em;
+  min-height: 7.5em;
+  padding: 1em;
+  border: 4px solid var(--ink);
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 6px 0 var(--ink);
+  transition:
+    transform 300ms ease,
+    opacity 300ms ease;
+}
+.side__text {
+  font-family: var(--font-display);
+  font-size: 3.4em;
+  line-height: 1.1;
+  word-break: keep-all;
+}
+.side__count {
+  font-size: 1.6em;
+  font-weight: 800;
+}
+.side.is-win {
+  background: var(--mint);
+  transform: scale(1.04);
+}
+.side.is-lose {
+  opacity: 0.45;
+  transform: scale(0.96);
+}
+.mino-host__timer {
+  font-size: 1.6em;
+  font-weight: 800;
+}
+.mino-host__timer b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.6em;
+}
+.mino-host__verdict {
+  font-size: 5em;
+  animation: slam 380ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+.mino-host__out {
+  font-size: 1.3em;
+  font-weight: 700;
+  max-width: 40em;
+}
+.mino-player {
+  display: grid;
+  gap: 14px;
+  text-align: center;
+}
+.mino-player__stage {
+  font-weight: 800;
+  font-size: var(--t-lg);
+}
+.mino-player__stage b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.4em;
+}
+.mino-player__prompt {
+  font-size: var(--t-2xl);
+  font-weight: 850;
+}
+.mino-player__choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.mino-player__choices .choice {
+  min-height: 160px;
+  align-content: center;
+}
+.mino-player__alive {
+  font-weight: 800;
+}
+
+/* ════════════ 추가: 군중 조종 레이스 ════════════ */
+.race-host {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 0.6em;
+}
+.race-host__head {
+  text-align: center;
+  min-height: 3em;
+}
+.race-host__count {
+  font-size: 6em;
+}
+.race-host__label {
+  font-size: 1.5em;
+  font-weight: 800;
+}
+.race-host__lanes {
+  position: relative;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 0.4em;
+  min-height: 0;
+}
+/* 캔버스 높이를 직접 정한다 (height:100%면 캔버스 속성 크기에 끌려 화면 밖으로 자란다) */
+.race-host__canvas {
+  width: 100%;
+  height: calc(100dvh - 14em);
+  min-height: 240px;
+  display: block;
+}
+.race-host__names {
+  margin: 0;
+  padding: 0 14px;
+  list-style: none;
+  display: grid;
+  gap: 14px;
+}
+.race-host__names li {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 0.8em;
+  padding: 0.3em 0.6em;
+  border-radius: var(--r-md);
+  background: var(--c);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  font-weight: 700;
+}
+.race-host__names li span:last-child {
+  opacity: 0.75;
+}
+.race-host__winner {
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 3em;
+}
+.race-player {
+  display: grid;
+  gap: 14px;
+  text-align: center;
+}
+.race-player__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 800;
+}
+.race-player__head strong {
+  margin-right: auto;
+}
+.race-player__count {
+  font-size: 6rem;
+}
+.tilt-meter {
+  position: relative;
+  height: 74px;
+  border: 4px solid var(--ink);
+  border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--soda-2), var(--paper) 50%, var(--soda-2));
+}
+.tilt-meter::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  background: var(--ink);
+}
+.tilt-meter span {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+  font-weight: 850;
+  transition: left 120ms linear;
+}
+.tilt-meter__mine {
+  background: var(--sun);
+  z-index: 2;
+}
+.tilt-meter__team {
+  background: var(--c, var(--gum));
+}
+.race-player__hint {
+  font-weight: 800;
+  font-size: var(--t-lg);
+}
+.race-player__pads {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.pad {
+  min-height: 120px;
+  border: 4px solid var(--ink);
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  font-size: 3rem;
+  box-shadow: var(--press);
+  touch-action: none;
+}
+.pad:active {
+  background: var(--sun);
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--ink);
+}

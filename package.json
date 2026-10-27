@@ -1,0 +1,31 @@
+{
+  "name": "caps",
+  "version": "0.1.0",
+  "private": true,
+  "description": "말문 — QR 하나로 입장해 폰으로 함께 노는 청중 참여형 아이스브레이킹 플랫폼",
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @caps/server --filter @caps/web dev",
+    "dev:https": "HTTPS=1 pnpm dev",
+    "build": "pnpm --filter @caps/web build && pnpm --filter @caps/server build",
+    "start": "pnpm --filter @caps/server start",
+    "test": "pnpm -r --workspace-concurrency=1 test",
+    "typecheck": "pnpm -r typecheck",
+    "bots": "pnpm --filter @caps/tools bots",
+    "load": "pnpm --filter @caps/tools load",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}

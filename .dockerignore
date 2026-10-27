@@ -1,0 +1,11 @@
+**/node_modules
+**/dist
+**/data
+**/coverage
+**/*.log
+**/.vite
+screenshots
+.git
+.env
+.env.*
+!.env.example

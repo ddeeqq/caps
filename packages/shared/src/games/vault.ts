@@ -109,7 +109,11 @@ export function generatePuzzle(symbols: readonly string[], levelIndex: number, r
 }
 
 /** 인원에 따라 역할을 나눈다. rotation으로 금고마다 역할을 돌린다. */
-export function assignRoles(memberIds: readonly string[], hasRule: boolean, rotation: number): Record<string, VaultRole[]> {
+export function assignRoles(
+  memberIds: readonly string[],
+  hasRule: boolean,
+  rotation: number,
+): Record<string, VaultRole[]> {
   const n = memberIds.length;
   const roles: Record<string, VaultRole[]> = {};
   if (n === 0) return roles;
@@ -308,7 +312,12 @@ export const vault: GameModule<VaultState, VaultHostView, VaultPlayerView> = {
     if (ctx.now < ts.lockedUntil) return;
     const code = String((input as { code?: unknown }).code ?? '').replace(/\D/g, '');
     if (code === ts.puzzle.answer) {
-      ts.results.push({ safe: ts.safeIndex, solved: true, ms: ctx.now - ts.startedAt, attempts: ts.attempts + 1 });
+      ts.results.push({
+        safe: ts.safeIndex,
+        solved: true,
+        ms: ctx.now - ts.startedAt,
+        attempts: ts.attempts + 1,
+      });
       ts.status = 'solved';
       ts.nextAt = ctx.now + SOLVED_PAUSE_MS;
       const team = s.teams.find((t) => t.id === ts.teamId);
@@ -334,16 +343,26 @@ export const vault: GameModule<VaultState, VaultHostView, VaultPlayerView> = {
       if (ts.status === 'active') {
         reassignOrphanRoles(ts, ctx);
         if (ctx.now >= ts.deadline) {
-          ts.results.push({ safe: ts.safeIndex, solved: false, ms: ctx.now - ts.startedAt, attempts: ts.attempts });
+          ts.results.push({
+            safe: ts.safeIndex,
+            solved: false,
+            ms: ctx.now - ts.startedAt,
+            attempts: ts.attempts,
+          });
           ts.status = 'failed';
           ts.nextAt = ctx.now + FAILED_PAUSE_MS;
         }
-      } else if ((ts.status === 'solved' || ts.status === 'failed') && ts.nextAt !== null && ctx.now >= ts.nextAt) {
+      } else if (
+        (ts.status === 'solved' || ts.status === 'failed') &&
+        ts.nextAt !== null &&
+        ctx.now >= ts.nextAt
+      ) {
         if (ts.safeIndex + 1 < s.safes) startSafe(s, ctx, team, ts.safeIndex + 1);
         else ts.status = 'finished';
       }
     }
-    if (s.teams.length === 0 || s.teams.every((t) => s.perTeam[t.id]?.status === 'finished')) s.stage = 'done';
+    if (s.teams.length === 0 || s.teams.every((t) => s.perTeam[t.id]?.status === 'finished'))
+      s.stage = 'done';
   },
 
   finished(s) {
@@ -356,7 +375,12 @@ export const vault: GameModule<VaultState, VaultHostView, VaultPlayerView> = {
         const ts = s.perTeam[team.id];
         if (ts && ts.status !== 'finished') {
           if (ts.status === 'active') {
-            ts.results.push({ safe: ts.safeIndex, solved: false, ms: ctx.now - ts.startedAt, attempts: ts.attempts });
+            ts.results.push({
+              safe: ts.safeIndex,
+              solved: false,
+              ms: ctx.now - ts.startedAt,
+              attempts: ts.attempts,
+            });
           }
           ts.status = 'finished';
         }
@@ -427,7 +451,11 @@ export const vault: GameModule<VaultState, VaultHostView, VaultPlayerView> = {
       attempts: ts?.attempts ?? 0,
       reveal: ts && between ? ts.puzzle.answer : null,
       roster: team
-        ? team.memberIds.map((id) => ({ nickname: nicknameOf(ctx, id), roles: ts?.roles[id] ?? [], me: id === playerId }))
+        ? team.memberIds.map((id) => ({
+            nickname: nicknameOf(ctx, id),
+            roles: ts?.roles[id] ?? [],
+            me: id === playerId,
+          }))
         : [],
       solved: ts?.results.filter((r) => r.solved).length ?? 0,
     };
@@ -462,7 +490,9 @@ export const vault: GameModule<VaultState, VaultHostView, VaultPlayerView> = {
         firstTwoSuccessRate: firstTwo.length
           ? Math.round((firstTwo.filter((r) => r.solved).length / firstTwo.length) * 100)
           : 0,
-        avgSolveSec: solved.length ? Math.round(solved.reduce((a, r) => a + r.ms, 0) / solved.length / 1000) : -1,
+        avgSolveSec: solved.length
+          ? Math.round(solved.reduce((a, r) => a + r.ms, 0) / solved.length / 1000)
+          : -1,
       },
       teams: s.teams.map((t) => ({ ...t, memberIds: [...t.memberIds] })),
       ranking: order,

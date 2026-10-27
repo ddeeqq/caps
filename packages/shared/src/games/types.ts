@@ -1,11 +1,17 @@
-import { z } from 'zod';
 import type { ResolvedPack } from '../pack/resolve';
 import type { PackContent } from '../pack/types';
 import type { Rng } from '../util/rng';
 import type { TeamInfo } from '../util/teams';
 
 export type GameId = 'nunchi' | 'soundmate' | 'vault' | 'cardsection' | 'minority' | 'tiltrace';
-export const GAME_IDS: readonly GameId[] = ['nunchi', 'soundmate', 'vault', 'cardsection', 'minority', 'tiltrace'];
+export const GAME_IDS: readonly GameId[] = [
+  'nunchi',
+  'soundmate',
+  'vault',
+  'cardsection',
+  'minority',
+  'tiltrace',
+];
 
 /** 설계서의 기본 진행 순서: 웃음 → 섞임 → 협동 → 일체감 */
 export const DEFAULT_FLOW: GameId[] = ['nunchi', 'soundmate', 'vault', 'cardsection'];
@@ -47,23 +53,6 @@ export const DEFAULT_SETTINGS: RoomSettings = {
   minorityVoteSeconds: 10,
   tiltraceLength: 45,
 };
-
-export const settingsSchema = z
-  .object({
-    nunchiRounds: z.number().int().min(1).max(10),
-    nunchiWindowMs: z.number().int().min(150).max(600),
-    soundmateSeconds: z.number().int().min(10).max(600),
-    missionSeconds: z.number().int().min(5).max(120),
-    vaultSafes: z.number().int().min(1).max(5),
-    seatRows: z.number().int().min(1).max(12),
-    seatCols: z.number().int().min(1).max(16),
-    cardsectionMs: z.number().int().min(4000).max(120_000),
-    minorityRounds: z.number().int().min(1).max(10),
-    minorityTalkSeconds: z.number().int().min(2).max(120),
-    minorityVoteSeconds: z.number().int().min(2).max(60),
-    tiltraceLength: z.number().int().min(5).max(120),
-  })
-  .partial();
 
 export interface GamePlayer {
   id: string;

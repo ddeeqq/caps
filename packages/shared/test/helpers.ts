@@ -1,4 +1,10 @@
-import { DEFAULT_SETTINGS, type GameCtx, type GamePlayer, type GameSummary, type RoomSettings } from '../src/games/types';
+import {
+  DEFAULT_SETTINGS,
+  type GameCtx,
+  type GamePlayer,
+  type GameSummary,
+  type RoomSettings,
+} from '../src/games/types';
 import { resolvePack, type ResolvePackInput } from '../src/pack/resolve';
 import { createRng } from '../src/util/rng';
 import type { TeamInfo } from '../src/util/teams';
@@ -28,7 +34,10 @@ export function makeCtx(
     seed?: number;
   } = {},
 ): TestCtx {
-  const players = typeof opts.players === 'number' || opts.players === undefined ? makePlayers(opts.players ?? 6) : opts.players;
+  const players =
+    typeof opts.players === 'number' || opts.players === undefined
+      ? makePlayers(opts.players ?? 6)
+      : opts.players;
   const ctx: TestCtx = {
     now: opts.now ?? 1_000_000,
     players,

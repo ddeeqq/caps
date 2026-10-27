@@ -1,6 +1,15 @@
 import type { NunchiHostView, NunchiPlayerView, RoomState, ViewEnvelope } from '@caps/shared';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { body, call, connect, nextEvent, sleep, startTestServer, type TestServer, type TestSocket } from './helpers';
+import {
+  body,
+  call,
+  connect,
+  nextEvent,
+  sleep,
+  startTestServer,
+  type TestServer,
+  type TestSocket,
+} from './helpers';
 
 let t: TestServer;
 const sockets: TestSocket[] = [];
@@ -103,7 +112,10 @@ describe('방과 참가자', () => {
   it('리모컨은 PIN으로 붙고, 틀린 PIN은 거절', async () => {
     const { code, hostPin } = await createRoom();
     const remote = await open();
-    const wrong = await call(remote.socket, 'host:remote-login', { code, pin: hostPin === '0000' ? '1111' : '0000' });
+    const wrong = await call(remote.socket, 'host:remote-login', {
+      code,
+      pin: hostPin === '0000' ? '1111' : '0000',
+    });
     expect(wrong.ok).toBe(false);
     const ok = await call(remote.socket, 'host:remote-login', { code, pin: hostPin });
     expect(ok.ok).toBe(true);
@@ -152,7 +164,11 @@ describe('방과 참가자', () => {
     players[0]!.socket.emit('player:input', { input: { type: 'tap' }, at: Date.now() });
     await sleep(700);
     players[1]!.socket.emit('player:input', { input: { type: 'tap' }, at: Date.now() });
-    await until(() => (host.view?.view as NunchiHostView | undefined)?.stage === 'roundEnd', 5_000, '라운드 종료');
+    await until(
+      () => (host.view?.view as NunchiHostView | undefined)?.stage === 'roundEnd',
+      5_000,
+      '라운드 종료',
+    );
     const out = (host.view?.view as NunchiHostView).outcome;
     expect(out?.kind).toBe('last');
     expect(out?.losers).toHaveLength(1);
@@ -185,7 +201,9 @@ describe('방과 참가자', () => {
     const joined = await call(p.socket, 'player:join', { code });
     if (!joined.ok) throw new Error('join failed');
     const kicked = nextEvent(p.socket, 'kicked');
-    expect((await call(host.socket, 'host:command', { type: 'kick', playerId: joined.playerId })).ok).toBe(true);
+    expect((await call(host.socket, 'host:command', { type: 'kick', playerId: joined.playerId })).ok).toBe(
+      true,
+    );
     await kicked;
     const back = await call((await open()).socket, 'player:join', { code, token: joined.token });
     expect(back.ok).toBe(false);

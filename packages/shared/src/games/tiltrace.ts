@@ -137,7 +137,16 @@ export const tiltrace: GameModule<TiltraceState, TiltraceHostView, TiltracePlaye
       boats: Object.fromEntries(
         teams.map((t) => [
           t.id,
-          { teamId: t.id, x: 0, progress: 0, stunnedUntil: 0, finishedAt: null, hits: 0, hitRocks: [], avg: 0 },
+          {
+            teamId: t.id,
+            x: 0,
+            progress: 0,
+            stunnedUntil: 0,
+            finishedAt: null,
+            hits: 0,
+            hitRocks: [],
+            avg: 0,
+          },
         ]),
       ),
       tilts: {},

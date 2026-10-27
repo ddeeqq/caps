@@ -1,6 +1,6 @@
-import { z } from 'zod';
-import { GAME_IDS, settingsSchema, type GameId, type GameSummary, type RoomSettings } from './games/types';
-import { LIMITS, packContentInputSchema, type PresetId } from './pack/types';
+import type { GameId, GameSummary, RoomSettings } from './games/types';
+import type { PresetId } from './pack/types';
+import type { HostCommand, HostCreatePayload, PlayerJoinPayload, SurveyAnswer } from './schemas';
 import type { TeamInfo } from './util/teams';
 
 /** 방 전체 진행 단계. 게임마다 intro → playing → result 를 반복한다 */
@@ -92,7 +92,8 @@ export interface ViewEnvelope {
   summary: GameSummary | null;
 }
 
-export type Ack<T extends object = object> = ({ ok: true } & T) | { ok: false; error: ErrorCode; message: string };
+export type Ack<T extends object = object> =
+  ({ ok: true } & T) | { ok: false; error: ErrorCode; message: string };
 
 export const ERROR_MESSAGES = {
   BAD_REQUEST: '요청 형식이 올바르지 않아요',
@@ -111,47 +112,6 @@ export type ErrorCode = keyof typeof ERROR_MESSAGES;
 
 export const MAX_PLAYERS_PER_ROOM = 150;
 
-export const hostCreateSchema = z.object({
-  preset: z.enum(['friends', 'work', 'class']),
-  packCode: z.string().trim().toUpperCase().max(8).optional(),
-  packName: z.string().trim().max(LIMITS.packName).optional(),
-  inlinePack: packContentInputSchema.partial().optional(),
-  personCompare: z.boolean().optional(),
-  flow: z.array(z.enum(GAME_IDS as [GameId, ...GameId[]])).min(1).max(12),
-  settings: settingsSchema.optional(),
-});
-export type HostCreatePayload = z.input<typeof hostCreateSchema>;
-
-export const hostCommandSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('start') }),
-  z.object({ type: z.literal('next') }),
-  z.object({ type: z.literal('skip') }),
-  z.object({ type: z.literal('pause') }),
-  z.object({ type: z.literal('resume') }),
-  z.object({ type: z.literal('end') }),
-  z.object({ type: z.literal('kick'), playerId: z.string().max(40) }),
-  z.object({ type: z.literal('game'), action: z.string().max(40), data: z.unknown().optional() }),
-  z.object({
-    type: z.literal('setFlow'),
-    flow: z.array(z.enum(GAME_IDS as [GameId, ...GameId[]])).min(1).max(12),
-  }),
-]);
-export type HostCommand = z.infer<typeof hostCommandSchema>;
-
-export const playerJoinSchema = z.object({
-  code: z.string().trim().toUpperCase().length(4),
-  nickname: z.string().max(40).optional(),
-  token: z.string().max(80).optional(),
-});
-export type PlayerJoinPayload = z.input<typeof playerJoinSchema>;
-
-export const surveySchema = z.object({
-  phase: z.enum(['lobby', 'end']),
-  comfort: z.number().int().min(1).max(5).optional(),
-  newPeople: z.number().int().min(0).max(3).optional(),
-});
-export type SurveyAnswer = z.infer<typeof surveySchema>;
-
 /** 종료 설문의 '오늘 처음 말해본 사람' 응답 구간 */
 export const NEW_PEOPLE_BUCKETS = ['0명', '1~2명', '3~5명', '6명 이상'] as const;
 
@@ -165,7 +125,10 @@ export interface ClientToServerEvents {
     payload: { code: string; hostToken: string; role: 'screen' | 'remote' },
     ack: (res: Ack<{ hostPin: string }>) => void,
   ) => void;
-  'host:remote-login': (payload: { code: string; pin: string }, ack: (res: Ack<{ hostToken: string }>) => void) => void;
+  'host:remote-login': (
+    payload: { code: string; pin: string },
+    ack: (res: Ack<{ hostToken: string }>) => void,
+  ) => void;
   'host:command': (cmd: HostCommand, ack?: (res: Ack) => void) => void;
   'player:join': (
     payload: PlayerJoinPayload,

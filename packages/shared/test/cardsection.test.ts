@@ -24,7 +24,10 @@ describe('카드섹션 프레임 함수', () => {
     expect(showFrame(params, { row: 0, col: 3, teamRank: null }, at).text).toBe('수');
     expect(showFrame(params, { row: 2, col: 4, teamRank: null }, at).text).toBe('고');
     expect(showFrame(params, { row: 0, col: 0, teamRank: null }, at).text).toBe('');
-    expect(showFrame(params, { row: null, col: null, teamRank: null }, at)).toMatchObject({ text: '수고', small: true });
+    expect(showFrame(params, { row: null, col: null, teamRank: null }, at)).toMatchObject({
+      text: '수고',
+      small: true,
+    });
   });
 
   it('긴 문구는 오른쪽에서 흘러 들어온다', () => {
@@ -70,7 +73,9 @@ describe('카드섹션 게임', () => {
       players: 4,
       teams,
       settings: { seatRows: 2, seatCols: 4, cardsectionMs: 8_000 },
-      history: [{ gameId: 'vault', title: '', headline: '', highlights: [], metrics: {}, ranking: ['t2', 't1'] }],
+      history: [
+        { gameId: 'vault', title: '', headline: '', highlights: [], metrics: {}, ranking: ['t2', 't1'] },
+      ],
     });
     const s = cardsection.init(ctx);
     expect(s.teamRank).toEqual({ t2: 0, t1: 1 });

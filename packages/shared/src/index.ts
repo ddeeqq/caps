@@ -1,5 +1,7 @@
 export * from './clock';
+export * from './clockSim';
 export * from './protocol';
+export * from './schemas';
 export * from './util/rng';
 export * from './util/teams';
 export * from './util/unionFind';

@@ -44,7 +44,11 @@ describe('금고 퍼즐', () => {
       d: ['input'],
       a: ['rule'],
     });
-    expect(assignRoles(['a', 'b', 'c'], true, 0)).toEqual({ a: ['order'], b: ['decode'], c: ['input', 'rule'] });
+    expect(assignRoles(['a', 'b', 'c'], true, 0)).toEqual({
+      a: ['order'],
+      b: ['decode'],
+      c: ['input', 'rule'],
+    });
     expect(assignRoles(['a', 'b'], false, 0)).toEqual({ a: ['order', 'decode'], b: ['input'] });
     expect(assignRoles(['a'], true, 0)).toEqual({ a: ['order', 'decode', 'input', 'rule'] });
   });
@@ -71,7 +75,13 @@ describe('금고 게임 흐름', () => {
     vault.input(s, ctx, orderer, { type: 'submit', code: ts.puzzle.answer }, ctx.now);
     expect(ts.status).toBe('active');
 
-    vault.input(s, ctx, inputter, { type: 'submit', code: '000' === ts.puzzle.answer ? '111' : '000' }, ctx.now);
+    vault.input(
+      s,
+      ctx,
+      inputter,
+      { type: 'submit', code: '000' === ts.puzzle.answer ? '111' : '000' },
+      ctx.now,
+    );
     expect(ts.lockedUntil).toBeGreaterThan(ctx.now);
     vault.input(s, ctx, inputter, { type: 'submit', code: ts.puzzle.answer }, ctx.now);
     expect(ts.status).toBe('active'); // 잠김 동안은 무시

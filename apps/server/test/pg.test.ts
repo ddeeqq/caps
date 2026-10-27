@@ -14,7 +14,14 @@ describe('PostgreSQL 저장소 (pg-mem)', () => {
     const input = {
       name: '테스트 팩',
       preset: 'work' as const,
-      content: { names: ['김 팀장'], keywords: ['스프린트'], balanceQuestions: [], teamNames: [], finaleText: '', penalties: [] },
+      content: {
+        names: ['김 팀장'],
+        keywords: ['스프린트'],
+        balanceQuestions: [],
+        teamNames: [],
+        finaleText: '',
+        penalties: [],
+      },
       options: {},
     };
     const pack = await storage.createPack('ABC234', input, 'hash-1');
@@ -38,7 +45,10 @@ describe('PostgreSQL 저장소 (pg-mem)', () => {
       retention: 100,
       flow: ['nunchi' as const],
       games: [],
-      survey: { lobby: { count: 0, avg: null }, end: { count: 0, avg: null, newPeople: [0, 0, 0, 0] as [number, number, number, number] } },
+      survey: {
+        lobby: { count: 0, avg: null },
+        end: { count: 0, avg: null, newPeople: [0, 0, 0, 0] as [number, number, number, number] },
+      },
       metrics: { faceToFace: 0, links: 0, wrongLinks: 0, reactions: 0, vaultSuccessRate: -1 },
     };
     await storage.saveSession(report);

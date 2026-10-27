@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { estimateOffset, sampleOffset, sanitizeClientTime } from '../src/clock';
+import { percentileOf, simulateClockSync } from '../src/clockSim';
 
 describe('시계 오차 추정', () => {
   it('대칭 경로면 오프셋을 정확히 구한다', () => {
@@ -25,6 +26,15 @@ describe('시계 오차 추정', () => {
     expect(Math.abs((est?.offset ?? 0) - trueOffset)).toBeLessThanOrEqual(1);
     expect(est?.rtt).toBe(20);
     expect(est?.samples).toBe(5);
+  });
+
+  it('지터와 지연 폭증이 있는 망에서도 오차 p95가 10ms 미만 (눈치게임 충돌 창 300ms의 3% 남짓)', () => {
+    const r = simulateClockSync({ trials: 1000, pings: 10, best: 3, seed: 42 });
+    const p95 = percentileOf(r.bestMedian, 95);
+    expect(p95).toBeLessThan(10);
+    // 핑 한 번이나 단순 평균보다 확실히 낫다
+    expect(p95).toBeLessThan(percentileOf(r.mean, 95));
+    expect(p95 * 4).toBeLessThan(percentileOf(r.single, 95));
   });
 
   it('비정상 측정은 무시한다', () => {

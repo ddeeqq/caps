@@ -42,7 +42,9 @@ export class RoomManager {
   async stop(): Promise<void> {
     if (this.tickTimer) clearInterval(this.tickTimer);
     if (this.cleanupTimer) clearInterval(this.cleanupTimer);
-    await Promise.all([...this.rooms.values()].filter((r) => r.summaries.length > 0).map((r) => this.saveReport(r)));
+    await Promise.all(
+      [...this.rooms.values()].filter((r) => r.summaries.length > 0).map((r) => this.saveReport(r)),
+    );
   }
 
   createRoom(opts: Omit<RoomOptions, 'code'>): Room {
@@ -80,7 +82,14 @@ export class RoomManager {
     return n;
   }
 
-  emitReaction(room: Room, payload: { kind: Parameters<ServerToClientEvents['reaction']>[0]['kind']; color: string; nickname: string }): void {
+  emitReaction(
+    room: Room,
+    payload: {
+      kind: Parameters<ServerToClientEvents['reaction']>[0]['kind'];
+      color: string;
+      nickname: string;
+    },
+  ): void {
     const event = { id: ++this.reactionSeq, ...payload };
     for (const sid of room.hostSockets) this.io.to(sid).emit('reaction', event);
   }
@@ -178,7 +187,8 @@ export class RoomManager {
   private async cleanup(): Promise<void> {
     const now = Date.now();
     for (const [code, room] of this.rooms) {
-      const anyone = room.hostSockets.size > 0 || room.remoteSockets.size > 0 || room.connectedPlayers().length > 0;
+      const anyone =
+        room.hostSockets.size > 0 || room.remoteSockets.size > 0 || room.connectedPlayers().length > 0;
       if (anyone) continue;
       const idle = now - room.lastActivity;
       if (idle > IDLE_ROOM_MS || (room.phase === 'finished' && idle > IDLE_FINISHED_MS)) {

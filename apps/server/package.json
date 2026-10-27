@@ -4,6 +4,9 @@
   "private": true,
   "description": "실시간 서버: 방 관리, 시계 동기화, 게임 런너, 팩 API",
   "type": "module",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsup",

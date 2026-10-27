@@ -32,8 +32,12 @@ describe('한글 조사', () => {
   });
 
   it('템플릿 자리에 조사를 자동으로 붙인다', () => {
-    expect(fillTemplate('{name:이/가} 더 좋아할 것 같은 쪽은?', { name: '수빈' })).toBe('수빈이 더 좋아할 것 같은 쪽은?');
-    expect(fillTemplate('{name:이/가} 고른 {thing}', { name: '하나', thing: '바다' })).toBe('하나가 고른 바다');
+    expect(fillTemplate('{name:이/가} 더 좋아할 것 같은 쪽은?', { name: '수빈' })).toBe(
+      '수빈이 더 좋아할 것 같은 쪽은?',
+    );
+    expect(fillTemplate('{name:이/가} 고른 {thing}', { name: '하나', thing: '바다' })).toBe(
+      '하나가 고른 바다',
+    );
     expect(fillTemplate('{missing} 그대로', {})).toBe('{missing} 그대로');
   });
 });
@@ -49,16 +53,25 @@ describe('팩 엔진', () => {
       },
     });
     expect(pack.balancePool[0]).toEqual({ prompt: '오늘 저녁은?', a: '삼겹살', b: '회' });
-    const withNames = pack.balancePool.filter((q) => ['지훈', '민수', '수빈'].some((n) => `${q.prompt}${q.a}${q.b}`.includes(n)));
+    const withNames = pack.balancePool.filter((q) =>
+      ['지훈', '민수', '수빈'].some((n) => `${q.prompt}${q.a}${q.b}`.includes(n)),
+    );
     expect(withNames.length).toBeGreaterThan(0);
-    expect(pack.vaultSymbols).toEqual(expect.arrayContaining(['지훈', '민수', '수빈', '단골집', '제주도', '노래방']));
+    expect(pack.vaultSymbols).toEqual(
+      expect.arrayContaining(['지훈', '민수', '수빈', '단골집', '제주도', '노래방']),
+    );
     expect(pack.vaultSymbols.length).toBeGreaterThanOrEqual(12);
   });
 
   it('직장 프리셋은 질문에 이름을 쓰지 않고 금고 기호에만 쓴다', () => {
-    const pack = resolvePack({ preset: 'work', content: { names: ['김 팀장', '박 대리'], keywords: ['프로젝트A', '스프린트'] } });
+    const pack = resolvePack({
+      preset: 'work',
+      content: { names: ['김 팀장', '박 대리'], keywords: ['프로젝트A', '스프린트'] },
+    });
     expect(pack.options.personCompare).toBe(false);
-    const leaks = pack.balancePool.filter((q) => `${q.prompt}${q.a}${q.b}`.includes('팀장') || `${q.prompt}${q.a}${q.b}`.includes('대리'));
+    const leaks = pack.balancePool.filter(
+      (q) => `${q.prompt}${q.a}${q.b}`.includes('팀장') || `${q.prompt}${q.a}${q.b}`.includes('대리'),
+    );
     expect(leaks).toHaveLength(0);
     expect(pack.vaultSymbols).toEqual(expect.arrayContaining(['김 팀장', '박 대리', '프로젝트A']));
   });
@@ -73,11 +86,16 @@ describe('팩 엔진', () => {
     expect(pack.content.finaleText).toBe('우리 우정 영원히');
     expect(pack.content.penalties.length).toBeGreaterThan(0);
     expect(pack.balancePool.length).toBeGreaterThan(10);
-    expect(new Set(pack.balancePool.map((q) => `${q.prompt}${q.a}${q.b}`)).size).toBe(pack.balancePool.length);
+    expect(new Set(pack.balancePool.map((q) => `${q.prompt}${q.a}${q.b}`)).size).toBe(
+      pack.balancePool.length,
+    );
   });
 
   it('같은 시드면 같은 결과', () => {
-    const input = { preset: 'friends' as const, content: { names: ['a', 'b', 'c'], keywords: ['x', 'y', 'z'] } };
+    const input = {
+      preset: 'friends' as const,
+      content: { names: ['a', 'b', 'c'], keywords: ['x', 'y', 'z'] },
+    };
     expect(resolvePack(input, 3)).toEqual(resolvePack(input, 3));
   });
 });

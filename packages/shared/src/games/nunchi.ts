@@ -46,7 +46,13 @@ export interface NunchiState {
   outcome: NunchiOutcome | null;
   penalties: Record<string, number>;
   penaltyText: Record<string, string>;
-  history: Array<{ round: number; kind: NunchiOutcomeKind; number: number; losers: string[]; spreadMs: number | null }>;
+  history: Array<{
+    round: number;
+    kind: NunchiOutcomeKind;
+    number: number;
+    losers: string[];
+    spreadMs: number | null;
+  }>;
   closestCall: { round: number; spreadMs: number; players: string[] } | null;
 }
 
@@ -134,7 +140,9 @@ function endRound(
   }
   const sorted = [...taps].sort((a, b) => a.t - b.t);
   const spreadMs =
-    sorted.length >= 2 ? (sorted[sorted.length - 1] as NunchiTap).t - (sorted[0] as NunchiTap).t : null;
+    sorted.length >= 2
+      ? Math.round((sorted[sorted.length - 1] as NunchiTap).t - (sorted[0] as NunchiTap).t)
+      : null;
   s.outcome = { kind, number, losers, taps: sorted };
   s.history.push({ round: s.round, kind, number, losers, spreadMs });
   if (kind === 'collision' && spreadMs !== null && (!s.closestCall || spreadMs < s.closestCall.spreadMs)) {
@@ -280,7 +288,7 @@ export const nunchi: GameModule<NunchiState, NunchiHostView, NunchiPlayerView> =
             windowMs: s.windowMs,
             spreadMs:
               outcome.taps.length >= 2
-                ? (outcome.taps[outcome.taps.length - 1] as NunchiTap).t - firstAt
+                ? Math.round((outcome.taps[outcome.taps.length - 1] as NunchiTap).t - firstAt)
                 : null,
             losers: outcome.losers.map((id) => ({
               nickname: nicknameOf(ctx, id),
@@ -315,7 +323,8 @@ export const nunchi: GameModule<NunchiState, NunchiHostView, NunchiPlayerView> =
       nextNumber: s.nextNumber,
       myNumber,
       pending,
-      canTap: (s.stage === 'countdown' || s.stage === 'open') && isParticipant && myNumber === null && !pending,
+      canTap:
+        (s.stage === 'countdown' || s.stage === 'open') && isParticipant && myNumber === null && !pending,
       isParticipant,
       outcome: outcome
         ? {

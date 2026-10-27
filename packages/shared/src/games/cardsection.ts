@@ -57,7 +57,10 @@ function parseHex(hex: string): [number, number, number] {
 }
 
 function toHex([r, g, b]: [number, number, number]): string {
-  const h = (v: number) => Math.round(clamp(v, 0, 255)).toString(16).padStart(2, '0');
+  const h = (v: number) =>
+    Math.round(clamp(v, 0, 255))
+      .toString(16)
+      .padStart(2, '0');
   return `#${h(r)}${h(g)}${h(b)}`;
 }
 
@@ -86,7 +89,9 @@ export function showFrame(p: ShowParams, cell: CellInfo, elapsedMs: number): Cel
   if (u < 3_000) {
     const n = 3 - Math.floor(u / 1000);
     const flash = u % 1000 < 140;
-    return flash ? { bg: '#ffffff', fg: BLACK, text: String(n) } : { bg: DARK, fg: '#ffffff', text: String(n) };
+    return flash
+      ? { bg: '#ffffff', fg: BLACK, text: String(n) }
+      : { bg: DARK, fg: '#ffffff', text: String(n) };
   }
 
   // 2. 색 파도: 밝은 띠가 왼쪽 열부터 오른쪽 열로 두 번 지나간다
@@ -95,7 +100,9 @@ export function showFrame(p: ShowParams, cell: CellInfo, elapsedMs: number): Cel
     const span = cols + 4;
     const pos = ((s * 2 * span) % span) - 2;
     const intensity =
-      cell.col === null ? 0.5 + 0.5 * Math.sin(s * Math.PI * 8) : Math.exp(-((col - pos) ** 2) / (2 * 1.1 * 1.1));
+      cell.col === null
+        ? 0.5 + 0.5 * Math.sin(s * Math.PI * 8)
+        : Math.exp(-((col - pos) ** 2) / (2 * 1.1 * 1.1));
     const hue = 200 + s * 540 + row * 12;
     return { bg: hsl(hue, 95, 6 + 58 * intensity), fg: '#ffffff', text: '' };
   }
@@ -220,7 +227,8 @@ export const cardsection: GameModule<CardsectionState, CardsectionHostView, Card
     const teams = ctx.teams ? reconcileTeams(ctx) : null;
     const teamRank: Record<string, number> = {};
     if (teams) {
-      const ranking = [...ctx.history].reverse().find((h) => h.ranking && h.ranking.length > 0)?.ranking ?? [];
+      const ranking =
+        [...ctx.history].reverse().find((h) => h.ranking && h.ranking.length > 0)?.ranking ?? [];
       const order = [...ranking.filter((id) => teams.some((t) => t.id === id))];
       for (const t of teams) if (!order.includes(t.id)) order.push(t.id);
       order.forEach((id, i) => {
@@ -333,7 +341,10 @@ export const cardsection: GameModule<CardsectionState, CardsectionHostView, Card
       gameId: 'cardsection',
       title: '인간 카드섹션',
       headline: `${seated}명의 폰이 하나의 화면이 됐어요`,
-      highlights: [`${s.rows}×${s.cols} 격자 중 ${seated}칸이 빛났어요`, `피날레 문구: ${ctx.pack.content.finaleText}`],
+      highlights: [
+        `${s.rows}×${s.cols} 격자 중 ${seated}칸이 빛났어요`,
+        `피날레 문구: ${ctx.pack.content.finaleText}`,
+      ],
       metrics: { seated, seatRate: Math.round((seated / total) * 100) },
       ...(s.teams ? { teams: s.teams } : {}),
     };

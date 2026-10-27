@@ -36,7 +36,13 @@ export interface MinorityState {
   voteMs: number;
   revealMs: number;
   lastReveal: MinorityReveal | null;
-  history: Array<{ round: number; question: BalanceQuestion; countA: number; countB: number; eliminated: number }>;
+  history: Array<{
+    round: number;
+    question: BalanceQuestion;
+    countA: number;
+    countB: number;
+    eliminated: number;
+  }>;
 }
 
 export interface MinorityHostView {
@@ -48,7 +54,8 @@ export interface MinorityHostView {
   aliveCount: number;
   total: number;
   votedCount: number;
-  reveal: null | (Omit<MinorityReveal, 'eliminated' | 'noVote'> & { eliminatedNames: string[]; survivors: number });
+  reveal:
+    null | (Omit<MinorityReveal, 'eliminated' | 'noVote'> & { eliminatedNames: string[]; survivors: number });
   survivors: string[];
   prophets: Array<{ nickname: string; points: number }>;
 }
@@ -169,7 +176,13 @@ export const minority: GameModule<MinorityState, MinorityHostView, MinorityPlaye
       }
       s.lastReveal = { countA, countB, tie, minority, eliminated: effective, noVote };
       if (s.question) {
-        s.history.push({ round: s.round, question: s.question, countA, countB, eliminated: effective.length });
+        s.history.push({
+          round: s.round,
+          question: s.question,
+          countA,
+          countB,
+          eliminated: effective.length,
+        });
       }
       s.stage = 'reveal';
       s.deadline = ctx.now + s.revealMs;
@@ -183,7 +196,8 @@ export const minority: GameModule<MinorityState, MinorityHostView, MinorityPlaye
       }
       s.round += 1;
       s.questionIndex += 1;
-      s.question = ctx.pack.balancePool[s.questionIndex % Math.max(1, ctx.pack.balancePool.length)] ?? s.question;
+      s.question =
+        ctx.pack.balancePool[s.questionIndex % Math.max(1, ctx.pack.balancePool.length)] ?? s.question;
       s.votes = {};
       s.predictions = {};
       s.lastReveal = null;
@@ -260,7 +274,9 @@ export const minority: GameModule<MinorityState, MinorityHostView, MinorityPlaye
             youEliminated: r.eliminated.includes(playerId),
             youSurvived: alive,
             predictionCorrect:
-              s.predictions[playerId] !== undefined && r.minority ? s.predictions[playerId] === r.minority : null,
+              s.predictions[playerId] !== undefined && r.minority
+                ? s.predictions[playerId] === r.minority
+                : null,
           }
         : null,
     };

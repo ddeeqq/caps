@@ -33,7 +33,8 @@ describe('소수결 서바이벌', () => {
     const ctx = makeCtx({ players: 4 });
     const s = minority.init(ctx);
     minority.start(s, ctx);
-    for (const id of ['p1', 'p2', 'p3', 'p4']) minority.input(s, ctx, id, { type: 'vote', choice: 'a' }, ctx.now);
+    for (const id of ['p1', 'p2', 'p3', 'p4'])
+      minority.input(s, ctx, id, { type: 'vote', choice: 'a' }, ctx.now);
     toVote(ctx, s);
     ctx.now = s.deadline;
     minority.tick(s, ctx);
@@ -45,7 +46,8 @@ describe('소수결 서바이벌', () => {
     const ctx = makeCtx({ players: 7, settings: { minorityRounds: 3 } });
     const s = minority.init(ctx);
     minority.start(s, ctx);
-    for (const id of ['p1', 'p2', 'p3', 'p4']) minority.input(s, ctx, id, { type: 'vote', choice: 'a' }, ctx.now);
+    for (const id of ['p1', 'p2', 'p3', 'p4'])
+      minority.input(s, ctx, id, { type: 'vote', choice: 'a' }, ctx.now);
     for (const id of ['p5', 'p6', 'p7']) minority.input(s, ctx, id, { type: 'vote', choice: 'b' }, ctx.now);
     toVote(ctx, s);
     ctx.now = s.deadline;

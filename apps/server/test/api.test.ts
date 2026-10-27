@@ -60,7 +60,10 @@ describe('HTTP API', () => {
   });
 
   it('금칙어가 들어간 팩은 거절한다', async () => {
-    const res = await fetch(`${t.url}/api/packs`, json({ name: '팩', preset: 'work', content: { keywords: ['시 발'] } }));
+    const res = await fetch(
+      `${t.url}/api/packs`,
+      json({ name: '팩', preset: 'work', content: { keywords: ['시 발'] } }),
+    );
     expect(res.status).toBe(400);
     expect((await body(res)).fields).toEqual(['content.keywords.0']);
   });
@@ -73,7 +76,10 @@ describe('HTTP API', () => {
   it('미리보기는 템플릿으로 만든 질문과 금고 기호를 보여준다', async () => {
     const res = await fetch(
       `${t.url}/api/packs/preview`,
-      json({ preset: 'friends', content: { names: ['지훈', '민수', '수빈'], keywords: ['단골집', '제주도'] } }),
+      json({
+        preset: 'friends',
+        content: { names: ['지훈', '민수', '수빈'], keywords: ['단골집', '제주도'] },
+      }),
     );
     const preview = await body(res);
     expect(preview.balancePool.length).toBeGreaterThan(5);

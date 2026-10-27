@@ -22,7 +22,11 @@ async function playThrough(flow: GameId[], botCount: number) {
       preset: 'friends',
       flow,
       packName: '통합 테스트',
-      inlinePack: { names: ['지훈', '민수', '수빈'], keywords: ['단골집', '제주도', '노래방'], finaleText: '테스트 끝' },
+      inlinePack: {
+        names: ['지훈', '민수', '수빈'],
+        keywords: ['단골집', '제주도', '노래방'],
+        finaleText: '테스트 끝',
+      },
       settings: FAST_SETTINGS,
     },
     waitForPlayers: botCount,

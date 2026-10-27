@@ -29,7 +29,10 @@ const attachSchema = z.object({
 });
 const remoteLoginSchema = z.object({
   code: z.string().trim().toUpperCase().length(4),
-  pin: z.string().trim().regex(/^\d{4}$/),
+  pin: z
+    .string()
+    .trim()
+    .regex(/^\d{4}$/),
 });
 const inputSchema = z.object({ input: z.unknown(), at: z.number().optional() });
 

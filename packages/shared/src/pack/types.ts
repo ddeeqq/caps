@@ -1,5 +1,3 @@
-import { z } from 'zod';
-
 export type PresetId = 'friends' | 'work' | 'class';
 export const PRESET_IDS: readonly PresetId[] = ['friends', 'work', 'class'];
 
@@ -54,40 +52,4 @@ export const LIMITS = {
   nickname: 12,
 } as const;
 
-const word = z.string().trim().min(1).max(LIMITS.word);
-
-export const balanceQuestionSchema = z.object({
-  prompt: z.string().trim().max(LIMITS.question).default('하나만 고른다면?'),
-  a: z.string().trim().min(1).max(LIMITS.questionSide),
-  b: z.string().trim().min(1).max(LIMITS.questionSide),
-});
-
-export const packContentInputSchema = z.object({
-  names: z.array(word).max(LIMITS.listItems).default([]),
-  keywords: z.array(word).max(LIMITS.listItems).default([]),
-  balanceQuestions: z.array(balanceQuestionSchema).max(LIMITS.questions).default([]),
-  teamNames: z.array(word).max(LIMITS.teamNames).default([]),
-  finaleText: z.string().trim().max(LIMITS.finale).default(''),
-  penalties: z.array(z.string().trim().min(1).max(LIMITS.penalty)).max(LIMITS.penalties).default([]),
-});
-
-export const packInputSchema = z.object({
-  name: z.string().trim().min(1).max(LIMITS.packName),
-  preset: z.enum(['friends', 'work', 'class']),
-  content: packContentInputSchema.default({
-    names: [],
-    keywords: [],
-    balanceQuestions: [],
-    teamNames: [],
-    finaleText: '',
-    penalties: [],
-  }),
-  options: z
-    .object({
-      personCompare: z.boolean().optional(),
-    })
-    .default({}),
-});
-
-export type PackInput = z.infer<typeof packInputSchema>;
-export type PackContentInput = z.infer<typeof packContentInputSchema>;
+// 입력 검증 스키마(zod)와 PackInput 타입은 ../schemas.ts 에 있다 (웹 번들에서 zod를 빼기 위해)

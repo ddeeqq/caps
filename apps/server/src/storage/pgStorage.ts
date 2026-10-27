@@ -65,7 +65,16 @@ export class PgStorage implements Storage {
     await this.db.query(
       `INSERT INTO packs (code, name, preset, content, options, edit_key_hash, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [code, pack.name, pack.preset, JSON.stringify(pack.content), JSON.stringify(pack.options), editKeyHash, now, now],
+      [
+        code,
+        pack.name,
+        pack.preset,
+        JSON.stringify(pack.content),
+        JSON.stringify(pack.options),
+        editKeyHash,
+        now,
+        now,
+      ],
     );
     return pack;
   }
@@ -92,7 +101,9 @@ export class PgStorage implements Storage {
 
   async saveSession(report: SessionReport): Promise<void> {
     const now = new Date().toISOString();
-    const { rows } = await this.db.query<{ id: string }>(`SELECT id FROM sessions WHERE id = $1`, [report.id]);
+    const { rows } = await this.db.query<{ id: string }>(`SELECT id FROM sessions WHERE id = $1`, [
+      report.id,
+    ]);
     if (rows.length > 0) {
       await this.db.query(`UPDATE sessions SET report = $2, updated_at = $3 WHERE id = $1`, [
         report.id,
@@ -100,12 +111,10 @@ export class PgStorage implements Storage {
         now,
       ]);
     } else {
-      await this.db.query(`INSERT INTO sessions (id, room_code, report, updated_at) VALUES ($1, $2, $3, $4)`, [
-        report.id,
-        report.roomCode,
-        JSON.stringify(report),
-        now,
-      ]);
+      await this.db.query(
+        `INSERT INTO sessions (id, room_code, report, updated_at) VALUES ($1, $2, $3, $4)`,
+        [report.id, report.roomCode, JSON.stringify(report), now],
+      );
     }
   }
 

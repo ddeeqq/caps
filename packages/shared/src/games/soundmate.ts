@@ -104,7 +104,14 @@ export interface SoundmateHostView {
     rank: number | null;
     forced: boolean;
     seconds: number | null;
-    mission: { prompt: string; a: string; b: string; votesA: number; votesB: number; decided: Vote | 'split' | null };
+    mission: {
+      prompt: string;
+      a: string;
+      b: string;
+      votesA: number;
+      votesB: number;
+      decided: Vote | 'split' | null;
+    };
   }>;
   links: number;
   wrong: number;
@@ -298,7 +305,11 @@ export const soundmate: GameModule<SoundmateState, SoundmateHostView, SoundmateP
       const code = raw.replace(/\D/g, '').slice(-5);
       const target = s.codeOwner[code];
       if (!target) {
-        s.feedback[playerId] = { kind: 'unknown', text: '그런 코드는 없어요. 다시 확인해 주세요', at: ctx.now };
+        s.feedback[playerId] = {
+          kind: 'unknown',
+          text: '그런 코드는 없어요. 다시 확인해 주세요',
+          at: ctx.now,
+        };
         return;
       }
       if (target === playerId) {
@@ -322,8 +333,16 @@ export const soundmate: GameModule<SoundmateState, SoundmateHostView, SoundmateP
       }
       ufUnion(s.parent, playerId, target);
       s.links.push({ a: playerId, b: target, at: ctx.now });
-      s.feedback[playerId] = { kind: 'ok', text: `연결! ${nicknameOf(ctx, target)}님과 같은 팀`, at: ctx.now };
-      s.feedback[target] = { kind: 'ok', text: `연결! ${nicknameOf(ctx, playerId)}님이 찾아왔어요`, at: ctx.now };
+      s.feedback[playerId] = {
+        kind: 'ok',
+        text: `연결! ${nicknameOf(ctx, target)}님과 같은 팀`,
+        at: ctx.now,
+      };
+      s.feedback[target] = {
+        kind: 'ok',
+        text: `연결! ${nicknameOf(ctx, playerId)}님이 찾아왔어요`,
+        at: ctx.now,
+      };
       checkTeam(s, ctx, me);
       return;
     }
@@ -398,7 +417,8 @@ export const soundmate: GameModule<SoundmateState, SoundmateHostView, SoundmateP
           complete: t.completeAt !== null,
           rank: t.rank,
           forced: t.forced,
-          seconds: t.completeAt !== null && !t.forced ? Math.round((t.completeAt - s.startedAt) / 1000) : null,
+          seconds:
+            t.completeAt !== null && !t.forced ? Math.round((t.completeAt - s.startedAt) / 1000) : null,
           mission: {
             prompt: t.mission.prompt,
             a: t.mission.a,
@@ -454,7 +474,9 @@ export const soundmate: GameModule<SoundmateState, SoundmateHostView, SoundmateP
       teamName: complete ? team.name : null,
       teamColor: complete ? team.color : null,
       teamIcon: complete ? soundById(team.soundId).icon : null,
-      teammates: complete ? team.memberIds.filter((id) => id !== playerId).map((id) => nicknameOf(ctx, id)) : null,
+      teammates: complete
+        ? team.memberIds.filter((id) => id !== playerId).map((id) => nicknameOf(ctx, id))
+        : null,
       rank: team.rank,
       mission: complete
         ? {
@@ -480,7 +502,9 @@ export const soundmate: GameModule<SoundmateState, SoundmateHostView, SoundmateP
     const avgSec =
       finished.length > 0
         ? Math.round(
-            finished.reduce((sum, t) => sum + ((t.completeAt as number) - s.startedAt), 0) / finished.length / 1000,
+            finished.reduce((sum, t) => sum + ((t.completeAt as number) - s.startedAt), 0) /
+              finished.length /
+              1000,
           )
         : -1;
     const unanimous = s.teams.filter(
@@ -491,9 +515,11 @@ export const soundmate: GameModule<SoundmateState, SoundmateHostView, SoundmateP
     ).length;
     const highlights: string[] = [];
     if (first?.completeAt != null) {
-      highlights.push(`가장 빨리 모인 팀: ${first.name} (${Math.round((first.completeAt - s.startedAt) / 1000)}초)`);
+      highlights.push(
+        `가장 빨리 모인 팀: ${first.name} (${Math.round((first.completeAt - s.startedAt) / 1000)}초)`,
+      );
     }
-    highlights.push(`서로 연결한 횟수 ${s.links.length}번, 헛걸음 ${s.wrong.length}번 — 그만큼 말을 걸었어요`);
+    highlights.push(`서로 말을 걸어 연결한 횟수 ${s.links.length}번 (헛걸음 ${s.wrong.length}번)`);
     if (unanimous > 0) highlights.push(`만장일치로 의견을 모은 팀 ${unanimous}개`);
     const teams: TeamInfo[] = s.teams.map((t) => ({
       id: t.id,

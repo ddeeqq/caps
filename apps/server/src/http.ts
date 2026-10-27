@@ -15,7 +15,9 @@ import type { RoomManager } from './room/RoomManager';
 import type { Storage } from './storage';
 import { newPackCode, newToken, sha256, type Logger } from './util';
 
-const previewSchema = packInputSchema.extend({ name: z.string().trim().max(30).optional().default('미리보기') });
+const previewSchema = packInputSchema.extend({
+  name: z.string().trim().max(30).optional().default('미리보기'),
+});
 
 const issues = (err: z.ZodError) => err.issues.map((i) => `${i.path.join('.')}: ${i.message}`);
 
@@ -75,11 +77,15 @@ export function createHttpApp(opts: {
     try {
       const parsed = packInputSchema.safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({ error: 'BAD_REQUEST', message: '입력을 확인해 주세요', issues: issues(parsed.error) });
+        return res
+          .status(400)
+          .json({ error: 'BAD_REQUEST', message: '입력을 확인해 주세요', issues: issues(parsed.error) });
       }
       const bad = findProfanity(parsed.data);
       if (bad.length) {
-        return res.status(400).json({ error: 'PROFANITY', message: '사용할 수 없는 표현이 있어요', fields: bad });
+        return res
+          .status(400)
+          .json({ error: 'PROFANITY', message: '사용할 수 없는 표현이 있어요', fields: bad });
       }
       let code = newPackCode();
       for (let i = 0; i < 20 && (await storage.getPack(code)); i++) code = newPackCode();
@@ -95,7 +101,8 @@ export function createHttpApp(opts: {
   app.get('/api/packs/:code', async (req, res, next) => {
     try {
       const pack = await storage.getPack(String(req.params.code).toUpperCase());
-      if (!pack) return res.status(404).json({ error: 'PACK_NOT_FOUND', message: '그 팩 코드를 찾을 수 없어요' });
+      if (!pack)
+        return res.status(404).json({ error: 'PACK_NOT_FOUND', message: '그 팩 코드를 찾을 수 없어요' });
       res.json({ pack });
     } catch (err) {
       next(err);
@@ -108,15 +115,25 @@ export function createHttpApp(opts: {
       if (!key) return res.status(403).json({ error: 'FORBIDDEN', message: '편집 키가 필요해요' });
       const parsed = packInputSchema.safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({ error: 'BAD_REQUEST', message: '입력을 확인해 주세요', issues: issues(parsed.error) });
+        return res
+          .status(400)
+          .json({ error: 'BAD_REQUEST', message: '입력을 확인해 주세요', issues: issues(parsed.error) });
       }
       const bad = findProfanity(parsed.data);
       if (bad.length) {
-        return res.status(400).json({ error: 'PROFANITY', message: '사용할 수 없는 표현이 있어요', fields: bad });
+        return res
+          .status(400)
+          .json({ error: 'PROFANITY', message: '사용할 수 없는 표현이 있어요', fields: bad });
       }
-      const result = await storage.updatePack(String(req.params.code).toUpperCase(), parsed.data, sha256(key));
-      if (result === null) return res.status(404).json({ error: 'PACK_NOT_FOUND', message: '그 팩 코드를 찾을 수 없어요' });
-      if (result === 'forbidden') return res.status(403).json({ error: 'FORBIDDEN', message: '편집 키가 맞지 않아요' });
+      const result = await storage.updatePack(
+        String(req.params.code).toUpperCase(),
+        parsed.data,
+        sha256(key),
+      );
+      if (result === null)
+        return res.status(404).json({ error: 'PACK_NOT_FOUND', message: '그 팩 코드를 찾을 수 없어요' });
+      if (result === 'forbidden')
+        return res.status(403).json({ error: 'FORBIDDEN', message: '편집 키가 맞지 않아요' });
       res.json({ pack: result });
     } catch (err) {
       next(err);
@@ -126,13 +143,18 @@ export function createHttpApp(opts: {
   app.post('/api/packs/preview', (req, res) => {
     const parsed = previewSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ error: 'BAD_REQUEST', message: '입력을 확인해 주세요', issues: issues(parsed.error) });
+      return res
+        .status(400)
+        .json({ error: 'BAD_REQUEST', message: '입력을 확인해 주세요', issues: issues(parsed.error) });
     }
     const resolved = resolvePack({
       name: parsed.data.name,
       preset: parsed.data.preset,
       content: parsed.data.content,
-      options: parsed.data.options.personCompare === undefined ? {} : { personCompare: parsed.data.options.personCompare },
+      options:
+        parsed.data.options.personCompare === undefined
+          ? {}
+          : { personCompare: parsed.data.options.personCompare },
     });
     res.json({
       balancePool: resolved.balancePool.slice(0, 12),

@@ -181,7 +181,16 @@ export function CardsectionPlayer({ view, client }: GameProps<CardsectionPlayerV
       <h2>지금 내 자리를 눌러 주세요</h2>
       <p className="muted">격자는 방을 위에서 본 모습이에요. 위쪽이 큰 화면 쪽이고, 흰 칸이 빈 자리예요</p>
       <p className="seat-pick__front">큰 화면</p>
-      <div className="seat-grid" style={{ gridTemplateColumns: `repeat(${view.cols}, 1fr)` }}>
+      <div
+        className="seat-grid"
+        style={
+          {
+            gridTemplateColumns: `repeat(${view.cols}, 1fr)`,
+            '--cols': view.cols,
+            '--rows': view.rows,
+          } as CSSProperties
+        }
+      >
         {cells}
       </div>
       <p className="seat-pick__state">

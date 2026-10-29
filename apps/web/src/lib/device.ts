@@ -32,13 +32,31 @@ export function motionReady(): boolean {
   return !!D && typeof D.requestPermission !== 'function' && isTouchDevice();
 }
 
-/** 좌우 기울기를 -1 ~ 1로 (세로로 들었을 때 35도면 끝까지) */
+/** 지금 화면이 폰 기본(세로) 방향에서 몇 도 돌아가 있는지: 0, 90, 180, 270 */
+export function screenAngle(): number {
+  const a = screen.orientation?.angle ?? (window as unknown as { orientation?: number }).orientation ?? 0;
+  return ((a % 360) + 360) % 360;
+}
+
+/**
+ * 화면 기준 좌우 기울기를 -1 ~ 1로 (35도면 끝까지).
+ * 센서 값은 폰 몸체 기준이라, 가로로 눕히면 좌우 기울기가 gamma가 아니라 beta에 담긴다.
+ * 이벤트마다 화면 방향을 다시 읽으므로 게임 도중 폰을 돌려도 그대로 맞는다.
+ * (iOS 16.4 미만처럼 screen.orientation이 없으면 window.orientation을 쓴다)
+ */
+export function tiltFromSensor(gamma: number, beta: number, angle: number): number {
+  let raw: number;
+  if (angle === 90) raw = beta;
+  else if (angle === 270) raw = -beta;
+  else if (angle === 180) raw = -gamma;
+  else raw = gamma;
+  return Math.max(-1, Math.min(1, raw / 35));
+}
+
 export function watchTilt(cb: (v: number) => void): () => void {
   const handler = (e: DeviceOrientationEvent) => {
     if (e.gamma === null || e.gamma === undefined) return;
-    const angle = (screen.orientation?.angle ?? 0) % 180;
-    const raw = angle === 0 ? e.gamma : (e.beta ?? 0) * (screen.orientation?.angle === 90 ? 1 : -1);
-    cb(Math.max(-1, Math.min(1, raw / 35)));
+    cb(tiltFromSensor(e.gamma, e.beta ?? 0, screenAngle()));
   };
   window.addEventListener('deviceorientation', handler);
   return () => window.removeEventListener('deviceorientation', handler);

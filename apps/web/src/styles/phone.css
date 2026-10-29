@@ -162,7 +162,7 @@
   gap: 16px;
 }
 .p-end__title {
-  font-size: clamp(2.3rem, 10.5vw, 3.052rem);
+  font-size: clamp(2.3rem, 10.5vmin, 3.052rem);
 }
 .p-met__list {
   display: flex;
@@ -198,7 +198,7 @@
   background: var(--mint-2);
 }
 .verdict__title {
-  font-size: clamp(3.2rem, 18vw, 5.4rem);
+  font-size: clamp(3.2rem, 18vmin, 5.4rem);
 }
 .verdict__why {
   font-size: var(--t-lg);

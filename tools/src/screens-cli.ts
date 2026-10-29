@@ -5,7 +5,8 @@
  *   pnpm build && pnpm start          # 서버가 빌드된 웹 앱을 함께 제공
  *   pnpm screens --out screenshots    # 다른 터미널에서
  *
- * 옵션: --url 서버(기본 http://localhost:3001), --web 웹 주소(기본 = url), --bots 봇 수(기본 9)
+ * 옵션: --url 서버(기본 http://localhost:3001), --web 웹 주소(기본 = url), --bots 봇 수(기본 9),
+ *       --phone 폰 화면 크기(기본 390x844). 가로 모드는 844x390, 갤럭시 폴드 겉화면 344x882, 펼친 화면 690x830
  * 크롬: CHROME_PATH 환경 변수, 없으면 playwright 기본 경로
  */
 import { mkdir } from 'node:fs/promises';
@@ -28,6 +29,7 @@ const url = arg('url', 'http://localhost:3001');
 const web = arg('web', url);
 const out = path.resolve(arg('out', 'screenshots'));
 const botCount = Number(arg('bots', '9'));
+const [phoneW, phoneH] = arg('phone', '390x844').split('x').map(Number) as [number, number];
 const executablePath = process.env.CHROME_PATH || undefined;
 
 let shot = 0;
@@ -59,7 +61,7 @@ async function main() {
     locale: 'ko-KR',
   });
   const mobile = await browser.newContext({
-    viewport: { width: 390, height: 844 },
+    viewport: { width: phoneW, height: phoneH },
     deviceScaleFactor: 2,
     isMobile: true,
     hasTouch: true,
@@ -226,7 +228,7 @@ async function main() {
   console.log('카드섹션');
   await step('카드 소개', 'intro', 'cardsection');
   await step('카드 시작', 'playing', 'cardsection');
-  await phone.locator('.seat').nth(7).click();
+  await phone.locator('.seat:not(.is-taken)').first().click();
   await sleep(3_000);
   await snap(phone, 'phone-seat');
   await snap(screen, 'cardsection-seat');

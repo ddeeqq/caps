@@ -76,7 +76,8 @@ export function SyncTest() {
       <dl className="sync__stats">
         <div>
           <dt>시계 차이 (오프셋)</dt>
-          <dd>{s ? `${Math.round(s.offset)}ms` : '-'}</dd>
+          {/* 내부 추정값은 단조 시계 기준이라 그대로 보이면 큰 숫자가 된다: 이 폰의 벽시계와의 차이로 보여 준다 */}
+          <dd>{s ? `${Math.round(s.offset - performance.timeOrigin)}ms` : '-'}</dd>
         </div>
         <div>
           <dt>추정 퍼짐</dt>

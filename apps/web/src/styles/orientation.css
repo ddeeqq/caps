@@ -1,0 +1,283 @@
+/* ── 폰을 가로로 눕혔을 때 ─────────────────────────────
+   세로 화면은 "위에서 아래로 한 줄"이 기본이다. 가로로 눕히면 높이가 400px 남짓이라
+   한 줄로 쌓으면 주요 버튼이 화면 밖으로 밀려난다. 그래서 높이가 낮은 가로 화면에서는
+   정보는 왼쪽, 누르는 것은 오른쪽(또는 양 끝)으로 나눈다.
+   갤럭시 폴드 겉화면을 눕힌 경우(약 880×340)까지 이 규칙으로 덮는다.
+   펼친 폴드(약 830×690)처럼 높이가 넉넉한 화면은 세로 배치를 그대로 쓴다. */
+
+@media (orientation: landscape) and (max-height: 560px) {
+  /* 공통 틀: 머리·꼬리를 얇게, 본문은 넓게. 노치가 있는 쪽은 비켜 간다 */
+  .phone__top {
+    padding: 6px max(16px, env(safe-area-inset-right)) 6px max(16px, env(safe-area-inset-left));
+    border-bottom-width: 2px;
+  }
+  .phone__main {
+    max-width: 980px;
+    gap: 12px;
+    padding: 10px max(24px, env(safe-area-inset-right)) 10px max(24px, env(safe-area-inset-left));
+  }
+  .phone--bleed .phone__main {
+    padding: 0;
+  }
+  .phone__bottom {
+    padding: 4px 16px calc(6px + env(safe-area-inset-bottom));
+  }
+  .react-bar__btn {
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+  }
+  .banner {
+    padding: 6px 16px;
+  }
+
+  /* 대기실: 제목은 왼쪽, 분위기 설문은 오른쪽 */
+  .p-lobby {
+    grid-template-columns: 1fr 1.2fr;
+    column-gap: 28px;
+    align-items: center;
+  }
+  .p-lobby > * {
+    grid-column: 1;
+  }
+  .p-lobby > .panel {
+    grid-column: 2;
+    grid-row: 1 / span 4;
+  }
+  .p-lobby__title {
+    font-size: var(--t-4xl);
+  }
+
+  /* 소개: 규칙은 왼쪽, 권한 버튼은 오른쪽 */
+  .p-intro:has(> .stack > *) {
+    grid-template-columns: 1.3fr 1fr;
+    column-gap: 28px;
+    align-items: center;
+  }
+  .p-intro:has(> .stack > *) > * {
+    grid-column: 1;
+  }
+  .p-intro:has(> .stack > *) > .stack,
+  .p-intro:has(> .stack > *) > .p-intro__wait {
+    grid-column: 2;
+  }
+  .p-intro:has(> .stack > *) > .stack {
+    grid-row: 1 / span 3;
+    align-self: end;
+  }
+  .p-intro__title {
+    font-size: var(--t-3xl);
+  }
+  .p-intro__rules li {
+    padding: 6px 12px;
+  }
+  /* 권한 버튼이 없는 게임은 규칙을 가로로 늘어놓아 높이를 아낀다 */
+  .p-intro:not(:has(> .stack > *)) .p-intro__rules {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+
+  /* 판정(벌칙·생존)과 결과 */
+  .verdict {
+    padding: 16px;
+    gap: 8px;
+  }
+  .verdict__title {
+    font-size: clamp(2.6rem, 16vmin, 4.2rem);
+  }
+
+  /* 눈치게임: 큰 버튼은 오른쪽, 라운드와 안내는 왼쪽 */
+  .nunchi-player {
+    grid-template-columns: 1fr auto;
+    column-gap: 28px;
+    align-items: center;
+  }
+  .nunchi-player > * {
+    grid-column: 1;
+  }
+  .nunchi-player > .big-tap {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    width: min(46vw, calc(100dvh - 96px));
+  }
+  .nunchi-player__round {
+    align-self: end;
+  }
+  .nunchi-player__hint {
+    align-self: start;
+  }
+
+  /* 소리 짝꿍: 소리 버튼은 왼쪽, QR·숫자 입력은 오른쪽 */
+  .sm-player {
+    grid-template-columns: auto 1fr;
+    column-gap: 28px;
+    align-items: center;
+    align-content: center;
+  }
+  .sm-player > * {
+    grid-column: 2;
+  }
+  .sm-player > .sound-btn {
+    grid-column: 1;
+    grid-row: 1 / span 6;
+    width: min(40vw, calc(100dvh - 110px));
+  }
+  .sm-player {
+    row-gap: 8px;
+  }
+  .team-done:has(.mission) {
+    grid-template-columns: 1fr 1.4fr;
+    column-gap: 20px;
+    align-items: center;
+    padding: 14px 16px;
+  }
+  .team-done:has(.mission) > * {
+    grid-column: 1;
+  }
+  .team-done:has(.mission) > .mission {
+    grid-column: 2;
+    grid-row: 1 / span 5;
+  }
+
+  /* 금고: 정보 카드는 왼쪽, 숫자판은 오른쪽 */
+  .vault-player:has(.keypad-wrap) {
+    grid-template-columns: 1fr minmax(260px, 0.9fr);
+    column-gap: 24px;
+    align-items: start;
+  }
+  .vault-player:has(.keypad-wrap) > * {
+    grid-column: 1;
+  }
+  .vault-player:has(.keypad-wrap) > .keypad-wrap,
+  .vault-player:has(.keypad-wrap) > .error-text,
+  .vault-player:has(.keypad-wrap) > .muted {
+    grid-column: 2;
+  }
+  .vault-player:has(.keypad-wrap) > .keypad-wrap {
+    grid-row: 1 / span 4;
+  }
+  .peek {
+    min-height: 120px;
+  }
+  .table {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+  .slot {
+    height: 48px;
+    font-size: 1.6rem;
+  }
+  .keypad {
+    gap: 6px;
+  }
+  .keypad button {
+    min-height: 44px;
+    font-size: 1.4rem;
+  }
+
+  /* 카드섹션 자리 고르기: 설명은 왼쪽, 좌석 격자는 오른쪽 */
+  .seat-pick {
+    grid-template-columns: minmax(200px, 1fr) 1.5fr;
+    column-gap: 24px;
+    align-items: center;
+    max-width: none;
+    padding: 12px max(20px, env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom))
+      max(20px, env(safe-area-inset-left));
+    text-align: left;
+  }
+  .seat-pick > * {
+    grid-column: 1;
+  }
+  .seat-pick > .seat-pick__front,
+  .seat-pick > .seat-grid {
+    grid-column: 2;
+  }
+  .seat-pick > .seat-pick__front {
+    grid-row: 1;
+  }
+  .seat-pick > .seat-grid {
+    grid-row: 2 / span 5;
+    --seat-chrome: 80px;
+  }
+  .seat-pick h2 {
+    font-size: var(--t-xl);
+  }
+
+  /* 소수결: 두 선택지를 낮게 */
+  .mino-player {
+    gap: 8px;
+  }
+  .mino-player__choices .choice {
+    min-height: min(120px, 30dvh);
+    padding-block: 12px;
+  }
+
+  /* 레이스: 왼쪽·오른쪽 패드를 화면 양 끝에 두어 두 엄지로 잡는다 */
+  .race-player {
+    grid-template-columns: minmax(96px, 1fr) minmax(0, 2.4fr) minmax(96px, 1fr);
+    column-gap: 16px;
+    align-items: center;
+  }
+  .race-player > * {
+    grid-column: 2;
+  }
+  .race-player__pads {
+    display: contents;
+  }
+  .race-player__pads .pad {
+    grid-row: 1 / span 6;
+    align-self: stretch;
+    min-height: calc(100dvh - 120px);
+  }
+  .race-player__pads .pad:first-child {
+    grid-column: 1;
+  }
+  .race-player__pads .pad:last-child {
+    grid-column: 3;
+  }
+  .race-player__count {
+    font-size: 4rem;
+  }
+  .tilt-meter {
+    height: 60px;
+  }
+
+  /* 끝 설문: 두 질문을 나란히 */
+  .p-end:has(> .panel ~ .panel) {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 16px;
+    align-items: start;
+  }
+  .p-end:has(> .panel ~ .panel) > :not(.panel) {
+    grid-column: 1 / -1;
+  }
+  .p-end__title {
+    font-size: var(--t-3xl);
+  }
+
+  /* 아래에서 올라오는 시트(내 QR, 스캐너)는 높이가 모자라니 화면 거의 전체를 쓴다 */
+  .sheet__body {
+    max-height: 100dvh;
+    padding-top: 12px;
+    gap: 8px;
+  }
+}
+
+/* ── 아주 좁은 화면 (갤럭시 폴드 겉화면 등, 폭 360px 미만) ───── */
+@media (max-width: 359px) {
+  .phone__main {
+    padding-inline: 12px;
+  }
+  .scale {
+    gap: 4px;
+  }
+  .scale__emoji {
+    font-size: 24px;
+  }
+  .scale__label:not(.scale__label--big) {
+    font-size: 0.66rem;
+  }
+  .react-bar__btn {
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+  }
+}

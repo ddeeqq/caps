@@ -176,7 +176,8 @@
   font-weight: 800;
 }
 .big-tap {
-  width: min(84vw, 380px);
+  /* 세로·가로·접는 폰 어디서나 화면 안에 들어오게 (높이로도 제한) */
+  width: min(84vw, 380px, 62dvh);
   aspect-ratio: 1;
   border-radius: 50%;
   border: 5px solid var(--ink);
@@ -208,14 +209,14 @@
   cursor: default;
 }
 .big-tap__label {
-  font-size: clamp(3rem, 16vw, 4.6rem);
+  font-size: clamp(3rem, 16vmin, 4.6rem);
 }
 .big-tap__count {
-  font-size: clamp(5rem, 30vw, 8rem);
+  font-size: clamp(5rem, 30vmin, 8rem);
 }
 .big-tap__done {
   font-family: var(--font-display);
-  font-size: clamp(3rem, 16vw, 4.6rem);
+  font-size: clamp(3rem, 16vmin, 4.6rem);
 }
 .nunchi-player__hint {
   font-weight: 750;
@@ -343,7 +344,7 @@
   font-size: 1.6em;
 }
 .sound-btn {
-  width: min(78vw, 320px);
+  width: min(78vw, 320px, 52dvh);
   aspect-ratio: 1;
   border-radius: 50%;
   border: 5px solid var(--ink);
@@ -359,14 +360,14 @@
   box-shadow: 0 2px 0 var(--ink);
 }
 .sound-btn__label {
-  font-size: clamp(2.4rem, 12vw, 3.4rem);
+  font-size: clamp(2.4rem, 12vmin, 3.4rem);
 }
 .sound-btn__sub {
   font-weight: 700;
   font-size: var(--t-sm);
 }
 .sm-player__text {
-  font-size: clamp(2.6rem, 14vw, 4rem);
+  font-size: clamp(2.6rem, 14vmin, 4rem);
 }
 .sm-player__actions {
   display: grid;
@@ -431,7 +432,7 @@
   line-height: 1;
 }
 .team-done__name {
-  font-size: clamp(2.2rem, 11vw, 3.2rem);
+  font-size: clamp(2.2rem, 11vmin, 3.2rem);
 }
 .team-done__rank,
 .team-done__mates {
@@ -886,6 +887,9 @@
 .seat-grid {
   display: grid;
   gap: 6px;
+  /* 칸이 정사각형이라 행이 많으면 세로로 넘친다: 화면 높이에 맞춰 격자 폭을 줄인다 */
+  width: min(100%, max(180px, calc((100dvh - var(--seat-chrome, 300px)) * var(--cols, 1) / var(--rows, 1))));
+  justify-self: center;
 }
 .seat {
   aspect-ratio: 1;
@@ -1014,7 +1018,7 @@
   gap: 12px;
 }
 .mino-player__choices .choice {
-  min-height: 160px;
+  min-height: min(160px, 30dvh);
   align-content: center;
 }
 .mino-player__alive {

@@ -60,6 +60,8 @@ export interface GamePlayer {
   color: string;
   connected: boolean;
   teamId: string | null;
+  /** 서버의 가상 참가자(봇). 팀을 나눌 때 사람과 섞지 않는다 */
+  bot?: boolean;
 }
 
 /** 게임이 끝나고 남는 기록: 결과 화면, 다음 게임 연결, 지표에 쓰인다 */

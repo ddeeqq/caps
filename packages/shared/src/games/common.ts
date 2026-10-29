@@ -1,5 +1,30 @@
+import type { Rng } from '../util/rng';
 import { smallestTeam, splitIntoTeams, TEAM_COLORS, type TeamInfo } from '../util/teams';
 import type { GameCtx, GamePlayer } from './types';
+
+/**
+ * 팀을 나누되 사람과 봇(가상 참가자)은 섞지 않는다.
+ * 봇은 사람에게 말을 걸 수 없으니, 섞이면 소리 짝꿍·금고에서 사람이 할 수 있는 게 없어진다.
+ */
+export function splitHumansAndBots(players: readonly GamePlayer[], rng: Rng): string[][] {
+  const humans = players.filter((p) => !p.bot).map((p) => p.id);
+  const bots = players.filter((p) => p.bot).map((p) => p.id);
+  return [...splitIntoTeams(humans, rng), ...splitIntoTeams(bots, rng)];
+}
+
+/** 도중에 들어온 사람이 갈 팀: 같은 종류(사람끼리·봇끼리)로 이뤄진 팀 중 가장 작은 팀 */
+export function teamForNewcomer<T extends { memberIds: string[] }>(
+  teams: readonly T[],
+  ctx: GameCtx,
+  playerId: string,
+): T | null {
+  const isBot = (id: string) => ctx.players.find((p) => p.id === id)?.bot === true;
+  const mine = isBot(playerId);
+  const sameKind = teams.filter(
+    (t) => t.memberIds.length > 0 && t.memberIds.every((id) => isBot(id) === mine),
+  );
+  return smallestTeam(sameKind.length > 0 ? sameKind : teams);
+}
 
 export function connectedPlayers(ctx: GameCtx): GamePlayer[] {
   return ctx.players.filter((p) => p.connected);
@@ -28,13 +53,14 @@ export function teamDisplayName(ctx: GameCtx, index: number): string {
  */
 export function reconcileTeams(ctx: GameCtx): TeamInfo[] {
   const present = new Set(ctx.players.map((p) => p.id));
-  const connected = connectedPlayers(ctx).map((p) => p.id);
+  const connectedList = connectedPlayers(ctx);
+  const connected = connectedList.map((p) => p.id);
   let teams: TeamInfo[] =
     ctx.teams?.map((t) => ({ ...t, memberIds: t.memberIds.filter((id) => present.has(id)) })) ?? [];
   teams = teams.filter((t) => t.memberIds.length > 0);
 
   if (teams.length === 0) {
-    const groups = splitIntoTeams(connected, ctx.rng);
+    const groups = splitHumansAndBots(connectedList, ctx.rng);
     return groups.map((memberIds, i) => ({
       id: `t${i + 1}`,
       name: teamDisplayName(ctx, i),
@@ -46,7 +72,7 @@ export function reconcileTeams(ctx: GameCtx): TeamInfo[] {
   const assigned = new Set(teams.flatMap((t) => t.memberIds));
   for (const id of connected) {
     if (assigned.has(id)) continue;
-    const target = smallestTeam(teams);
+    const target = teamForNewcomer(teams, ctx, id);
     if (target) target.memberIds.push(id);
   }
   return teams;

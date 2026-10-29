@@ -1,5 +1,5 @@
 import type { TeamInfo } from '../util/teams';
-import { clamp, connectedPlayers, inputType, nicknameOf, reconcileTeams } from './common';
+import { clamp, connectedPlayers, inputType, isConnected, nicknameOf, reconcileTeams } from './common';
 import type { GameCtx, GameModule, GameSummary } from './types';
 
 /**
@@ -198,6 +198,35 @@ export interface CardsectionPlayerView {
 }
 
 const SHOW_LEAD_MS = 5_000;
+const MAX_ROWS = 12;
+const MAX_COLS = 16;
+
+/**
+ * 진행자가 정한 격자가 인원보다 작으면 모두 앉을 수 있을 만큼 넓힌다.
+ * 가로가 조금 긴 모양(열 ≤ 행 × 1.5)을 유지하며 열부터 늘린다. 최대 12 × 16 = 192칸.
+ */
+export function fitSeatGrid(rows: number, cols: number, people: number): { rows: number; cols: number } {
+  let r = clamp(Math.round(rows), 1, MAX_ROWS);
+  let c = clamp(Math.round(cols), 1, MAX_COLS);
+  while (r * c < people && (r < MAX_ROWS || c < MAX_COLS)) {
+    if (c < MAX_COLS && (c <= r * 1.5 || r >= MAX_ROWS)) c += 1;
+    else r += 1;
+  }
+  return { rows: r, cols: c };
+}
+
+/** 이 자리에 지금 접속해 있는 다른 사람이 앉아 있는지 */
+function seatTakenByOther(
+  s: CardsectionState,
+  ctx: GameCtx,
+  playerId: string,
+  row: number,
+  col: number,
+): boolean {
+  return Object.entries(s.seats).some(
+    ([id, seat]) => id !== playerId && seat.row === row && seat.col === col && isConnected(ctx, id),
+  );
+}
 
 function rankOf(s: CardsectionState, playerId: string): number | null {
   const team = s.teams?.find((t) => t.memberIds.includes(playerId));
@@ -235,10 +264,11 @@ export const cardsection: GameModule<CardsectionState, CardsectionHostView, Card
         teamRank[id] = i;
       });
     }
+    const grid = fitSeatGrid(ctx.settings.seatRows, ctx.settings.seatCols, connectedPlayers(ctx).length);
     return {
       stage: 'intro',
-      rows: ctx.settings.seatRows,
-      cols: ctx.settings.seatCols,
+      rows: grid.rows,
+      cols: grid.cols,
       seats: {},
       show: null,
       endAt: 0,
@@ -259,6 +289,8 @@ export const cardsection: GameModule<CardsectionState, CardsectionHostView, Card
     const r = row as number;
     const c = col as number;
     if (r < 0 || r >= s.rows || c < 0 || c >= s.cols) return;
+    // 한 칸에 폰 하나. 나간 사람이 앉았던 자리는 다른 사람이 가져갈 수 있다
+    if (seatTakenByOther(s, ctx, playerId, r, c)) return;
     s.seats[playerId] = { row: r, col: c };
   },
 
@@ -292,7 +324,7 @@ export const cardsection: GameModule<CardsectionState, CardsectionHostView, Card
 
   hostView(s, ctx) {
     const seats = Object.entries(s.seats)
-      .filter(([id]) => ctx.players.some((p) => p.id === id))
+      .filter(([id]) => isConnected(ctx, id))
       .map(([id, seat]) => {
         const rank = rankOf(s, id);
         const team = s.teams?.find((t) => t.memberIds.includes(id));
@@ -325,7 +357,7 @@ export const cardsection: GameModule<CardsectionState, CardsectionHostView, Card
       cols: s.cols,
       mySeat: s.seats[playerId] ?? null,
       taken: Object.entries(s.seats)
-        .filter(([id]) => id !== playerId && ctx.players.some((p) => p.id === id))
+        .filter(([id]) => id !== playerId && isConnected(ctx, id))
         .map(([, seat]) => [seat.row, seat.col] as [number, number]),
       show: s.show,
       teamRank: rankOf(s, playerId),

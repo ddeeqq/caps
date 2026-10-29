@@ -22,6 +22,7 @@ async function main() {
     log,
     allowCors: process.env.NODE_ENV !== 'production',
   });
+  await server.restoreRooms();
   const actualPort = await server.listen(port, host);
   log.info(`말문 서버 실행 중 → http://localhost:${actualPort}`);
 

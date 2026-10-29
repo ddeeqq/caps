@@ -1,6 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Pack, PackInput, SessionReport } from '@caps/shared';
+import { isRoomSnapshot, type RoomSnapshot } from '../room/snapshot';
 import { safeEqual } from '../util';
 import { toPack, type Storage } from './types';
 
@@ -19,6 +20,10 @@ export class JsonStorage implements Storage {
 
   private get packsFile(): string {
     return path.join(this.dir, 'packs.json');
+  }
+
+  private get roomsFile(): string {
+    return path.join(this.dir, 'rooms.json');
   }
 
   private sessionFile(id: string): string {
@@ -41,17 +46,31 @@ export class JsonStorage implements Storage {
     await rename(tmp, file);
   }
 
+  /**
+   * 쓰기를 줄 세운다. 실패는 그 쓰기를 요청한 쪽에 그대로 알리고(조용히 삼키지 않음),
+   * 줄은 계속 이어지게 한다.
+   */
+  private enqueue(task: () => Promise<void>): Promise<void> {
+    const run = this.queue.then(task);
+    this.queue = run.catch(() => undefined);
+    return run;
+  }
+
   private persistPacks(): Promise<void> {
     const snapshot = Object.fromEntries(this.packs);
-    this.queue = this.queue.then(() => this.atomicWrite(this.packsFile, snapshot)).catch(() => undefined);
-    return this.queue;
+    return this.enqueue(() => this.atomicWrite(this.packsFile, snapshot));
   }
 
   async createPack(code: string, input: PackInput, editKeyHash: string): Promise<Pack> {
     const now = new Date().toISOString();
     const pack = toPack(code, input, now, now);
     this.packs.set(code, { pack, editKeyHash });
-    await this.persistPacks();
+    try {
+      await this.persistPacks();
+    } catch (err) {
+      this.packs.delete(code); // 디스크에 못 썼으면 메모리에도 남기지 않는다
+      throw err;
+    }
     return pack;
   }
 
@@ -65,14 +84,18 @@ export class JsonStorage implements Storage {
     if (!safeEqual(rec.editKeyHash, editKeyHash)) return 'forbidden';
     const pack = toPack(code, input, rec.pack.createdAt, new Date().toISOString());
     this.packs.set(code, { pack, editKeyHash: rec.editKeyHash });
-    await this.persistPacks();
+    try {
+      await this.persistPacks();
+    } catch (err) {
+      this.packs.set(code, rec); // 되돌린다
+      throw err;
+    }
     return pack;
   }
 
   async saveSession(report: SessionReport): Promise<void> {
     const file = this.sessionFile(report.id);
-    this.queue = this.queue.then(() => this.atomicWrite(file, report)).catch(() => undefined);
-    await this.queue;
+    await this.enqueue(() => this.atomicWrite(file, report));
   }
 
   async getSession(id: string): Promise<SessionReport | null> {
@@ -80,6 +103,19 @@ export class JsonStorage implements Storage {
       return JSON.parse(await readFile(this.sessionFile(id), 'utf8')) as SessionReport;
     } catch {
       return null;
+    }
+  }
+
+  async saveRoomSnapshots(snapshots: RoomSnapshot[]): Promise<void> {
+    await this.enqueue(() => this.atomicWrite(this.roomsFile, snapshots));
+  }
+
+  async loadRoomSnapshots(): Promise<RoomSnapshot[]> {
+    try {
+      const raw: unknown = JSON.parse(await readFile(this.roomsFile, 'utf8'));
+      return Array.isArray(raw) ? raw.filter(isRoomSnapshot) : [];
+    } catch {
+      return [];
     }
   }
 

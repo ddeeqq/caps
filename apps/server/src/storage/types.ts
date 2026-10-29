@@ -1,4 +1,5 @@
 import type { Pack, PackInput, SessionReport } from '@caps/shared';
+import type { RoomSnapshot } from '../room/snapshot';
 
 /**
  * 저장소 인터페이스. 방 상태는 메모리에 두고, 팩과 세션 기록만 여기에 저장한다.
@@ -13,6 +14,9 @@ export interface Storage {
   updatePack(code: string, input: PackInput, editKeyHash: string): Promise<Pack | null | 'forbidden'>;
   saveSession(report: SessionReport): Promise<void>;
   getSession(id: string): Promise<SessionReport | null>;
+  /** 진행 중인 방 전체의 저장본 (서버 재시작 복구용). 매번 통째로 덮어쓴다 */
+  saveRoomSnapshots(snapshots: RoomSnapshot[]): Promise<void>;
+  loadRoomSnapshots(): Promise<RoomSnapshot[]>;
   close(): Promise<void>;
 }
 

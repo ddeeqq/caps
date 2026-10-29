@@ -1,6 +1,6 @@
 import { josa } from '../pack/josa';
-import { smallestTeam, type TeamInfo } from '../util/teams';
-import { clamp, inputType, isConnected, reconcileTeams } from './common';
+import type { TeamInfo } from '../util/teams';
+import { clamp, inputType, isConnected, reconcileTeams, teamForNewcomer } from './common';
 import type { GameModule, GameSummary } from './types';
 
 /**
@@ -218,7 +218,7 @@ export const tiltrace: GameModule<TiltraceState, TiltraceHostView, TiltracePlaye
 
   playerJoined(s, ctx, playerId) {
     if (s.teams.some((t) => t.memberIds.includes(playerId))) return;
-    const team = smallestTeam(s.teams);
+    const team = teamForNewcomer(s.teams, ctx, playerId);
     if (team) team.memberIds.push(playerId);
     void ctx;
   },

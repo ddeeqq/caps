@@ -3,7 +3,6 @@ import {
   errorAck,
   hostCommandSchema,
   hostCreateSchema,
-  MAX_PLAYERS_PER_ROOM,
   playerJoinSchema,
   REACTION_KINDS,
   surveySchema,
@@ -35,6 +34,9 @@ const remoteLoginSchema = z.object({
     .regex(/^\d{4}$/),
 });
 const inputSchema = z.object({ input: z.unknown(), at: z.number().optional() });
+
+/** 서버 한 대가 동시에 들고 있을 방 수 상한 (방 만들기 남용으로 메모리가 차는 것을 막는다) */
+const MAX_ROOMS = Number(process.env.MAX_ROOMS ?? 500);
 
 /** ack 콜백이 없거나 잘못 와도 서버가 죽지 않게 */
 function replier<T>(ack: unknown): (res: T) => void {
@@ -76,6 +78,7 @@ export function registerSocketHandlers(io: IO, manager: RoomManager, storage: St
       const reply = replier<Parameters<Parameters<ClientToServerEvents['host:create']>[1]>[0]>(ack);
       try {
         if (!createLimiter.allow()) return reply(errorAck('TOO_MANY_TRIES'));
+        if (manager.rooms.size >= MAX_ROOMS) return reply(errorAck('SERVER_BUSY'));
         const parsed = hostCreateSchema.safeParse(payload);
         if (!parsed.success) return reply(errorAck('BAD_REQUEST'));
         const pack = await packForRoom(parsed.data, storage);
@@ -111,7 +114,12 @@ export function registerSocketHandlers(io: IO, manager: RoomManager, storage: St
       if (!parsed.success) return reply(errorAck('BAD_REQUEST'));
       const room = manager.get(parsed.data.code);
       if (!room) return reply(errorAck('ROOM_NOT_FOUND'));
-      if (!safeEqual(parsed.data.pin, room.hostPin)) return reply(errorAck('BAD_PIN'));
+      if (room.pinLocked()) return reply(errorAck('TOO_MANY_TRIES'));
+      if (!safeEqual(parsed.data.pin, room.hostPin)) {
+        room.recordPinFailure();
+        log.warn(`리모컨 PIN 오류 ${room.code}`);
+        return reply(errorAck('BAD_PIN'));
+      }
       attachHost(socket, room, 'remote');
       reply({ ok: true, hostToken: room.hostToken });
     });
@@ -147,7 +155,7 @@ export function registerSocketHandlers(io: IO, manager: RoomManager, storage: St
       if (!rec) {
         if (token && room.kickedTokens.has(token)) return reply(errorAck('KICKED'));
         if (room.phase === 'finished') return reply(errorAck('ROOM_CLOSED'));
-        if (room.players.size >= MAX_PLAYERS_PER_ROOM) return reply(errorAck('ROOM_FULL'));
+        if (!room.hasCapacity()) return reply(errorAck('ROOM_FULL'));
         const nickname = room.normalizeNickname(parsed.data.nickname);
         if (nickname === 'NICKNAME_BLOCKED') return reply(errorAck('NICKNAME_BLOCKED'));
         rec = room.addPlayer(nickname);

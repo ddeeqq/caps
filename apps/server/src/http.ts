@@ -32,6 +32,17 @@ export function createHttpApp(opts: {
   const startedAt = opts.startedAt ?? Date.now();
   const app = express();
   app.disable('x-powered-by');
+  // 기본 보안 헤더. 카메라(QR 스캔)와 모션 센서(레이스)는 같은 출처에서만 허용한다
+  app.use((_req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader(
+      'Permissions-Policy',
+      'camera=(self), accelerometer=(self), gyroscope=(self), magnetometer=(self), microphone=(), geolocation=()',
+    );
+    next();
+  });
   app.use(express.json({ limit: '64kb' }));
 
   app.get('/api/health', (_req, res) => {
@@ -183,7 +194,18 @@ export function createHttpApp(opts: {
   // 빌드된 웹 앱 (프로덕션). 개발 중에는 Vite 개발 서버가 대신한다.
   const webDist = opts.webDist;
   if (webDist && existsSync(path.join(webDist, 'index.html'))) {
-    app.use(express.static(webDist, { index: false, maxAge: '1h' }));
+    app.use(
+      express.static(webDist, {
+        index: false,
+        maxAge: '1h',
+        // 파일 이름에 내용 해시가 붙은 빌드 결과물은 바뀌지 않으니 오래 캐시한다
+        setHeaders(res, filePath) {
+          if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          }
+        },
+      }),
+    );
     app.use((req, res, next) => {
       if (req.method !== 'GET' || req.path.startsWith('/socket.io')) return next();
       res.setHeader('Cache-Control', 'no-cache');

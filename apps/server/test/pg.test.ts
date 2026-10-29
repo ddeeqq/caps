@@ -41,6 +41,7 @@ describe('PostgreSQL 저장소 (pg-mem)', () => {
       startedAt: new Date().toISOString(),
       endedAt: null,
       peakPlayers: 3,
+      bots: 0,
       activeAtEnd: 3,
       retention: 100,
       flow: ['nunchi' as const],
@@ -55,5 +56,13 @@ describe('PostgreSQL 저장소 (pg-mem)', () => {
     await storage.saveSession({ ...report, peakPlayers: 5 });
     expect((await storage.getSession('session-1'))?.peakPlayers).toBe(5);
     expect(await storage.getSession('none')).toBeNull();
+
+    // 방 저장본: 처음엔 비어 있고, 덮어쓰면 마지막 것만 남는다. 모양이 다른 항목은 버린다
+    expect(await storage.loadRoomSnapshots()).toEqual([]);
+    const snap = { v: 1, code: 'ABCD', identity: { hostToken: 't' }, players: [], savedAt: 1 };
+    await storage.saveRoomSnapshots([snap as never]);
+    await storage.saveRoomSnapshots([{ ...snap, code: 'WXYZ' } as never, { nope: true } as never]);
+    const loaded = await storage.loadRoomSnapshots();
+    expect(loaded.map((r) => r.code)).toEqual(['WXYZ']);
   });
 });

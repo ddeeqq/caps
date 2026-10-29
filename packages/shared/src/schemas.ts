@@ -91,6 +91,8 @@ export const hostCommandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('kick'), playerId: z.string().max(40) }),
   z.object({ type: z.literal('game'), action: z.string().max(40), data: z.unknown().optional() }),
   z.object({ type: z.literal('setFlow'), flow: z.array(gameIdSchema).min(1).max(12) }),
+  z.object({ type: z.literal('addBots'), count: z.number().int().min(1).max(30) }),
+  z.object({ type: z.literal('clearBots') }),
 ]);
 export type HostCommand = z.infer<typeof hostCommandSchema>;
 

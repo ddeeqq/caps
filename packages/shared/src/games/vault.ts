@@ -1,8 +1,8 @@
 import { josa } from '../pack/josa';
 import { DEFAULT_VAULT_SYMBOLS } from '../pack/presets';
 import type { Rng } from '../util/rng';
-import { smallestTeam, type TeamInfo } from '../util/teams';
-import { inputType, isConnected, nicknameOf, reconcileTeams } from './common';
+import type { TeamInfo } from '../util/teams';
+import { inputType, isConnected, nicknameOf, reconcileTeams, teamForNewcomer } from './common';
 import type { GameCtx, GameModule, GameSummary } from './types';
 
 /**
@@ -232,6 +232,14 @@ function startSafe(s: VaultState, ctx: GameCtx, team: TeamInfo, index: number): 
   };
 }
 
+/** 금고 도중 다시 들어온(역할이 없는) 팀원에게 검산을 맡긴다. 화면에 할 일이 없는 사람이 없게 */
+function giveIdleMembersChecksum(ts: VaultTeamState, team: TeamInfo, ctx: GameCtx): void {
+  for (const id of team.memberIds) {
+    if (!isConnected(ctx, id)) continue;
+    if ((ts.roles[id] ?? []).length === 0) ts.roles[id] = ['checksum'];
+  }
+}
+
 /** 접속이 끊긴 사람의 역할을 남은 팀원 중 역할이 가장 적은 사람에게 넘긴다 */
 function reassignOrphanRoles(ts: VaultTeamState, ctx: GameCtx): void {
   const holders = Object.keys(ts.roles);
@@ -342,6 +350,7 @@ export const vault: GameModule<VaultState, VaultHostView, VaultPlayerView> = {
       if (!ts) continue;
       if (ts.status === 'active') {
         reassignOrphanRoles(ts, ctx);
+        giveIdleMembersChecksum(ts, team, ctx);
         if (ctx.now >= ts.deadline) {
           ts.results.push({
             safe: ts.safeIndex,
@@ -391,7 +400,7 @@ export const vault: GameModule<VaultState, VaultHostView, VaultPlayerView> = {
 
   playerJoined(s, ctx, playerId) {
     if (s.teams.some((t) => t.memberIds.includes(playerId))) return;
-    const team = smallestTeam(s.teams);
+    const team = teamForNewcomer(s.teams, ctx, playerId);
     if (!team) return;
     team.memberIds.push(playerId);
     const ts = s.perTeam[team.id];

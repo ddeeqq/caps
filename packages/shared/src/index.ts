@@ -1,3 +1,4 @@
+export * from './bots';
 export * from './clock';
 export * from './clockSim';
 export * from './protocol';

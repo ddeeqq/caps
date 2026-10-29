@@ -23,6 +23,7 @@ export interface PlayerSummary {
   color: string;
   connected: boolean;
   teamId: string | null;
+  bot: boolean;
 }
 
 export interface SurveyStats {
@@ -39,7 +40,10 @@ export interface SessionReport {
   preset: PresetId;
   startedAt: string;
   endedAt: string | null;
+  /** 동시에 접속한 사람 수의 최댓값 (봇 제외) */
   peakPlayers: number;
+  /** 함께 놀았던 가상 참가자(봇) 수의 최댓값. 0이 아니면 지표에 봇의 행동이 섞여 있다 */
+  bots: number;
   activeAtEnd: number;
   /** 참여 유지율 (%) */
   retention: number;
@@ -65,6 +69,8 @@ export interface RoomState {
   packName: string;
   preset: PresetId;
   playerCount: number;
+  /** playerCount 중 가상 참가자(봇) 수 */
+  botCount: number;
   /** 큰 화면·리모컨에만 */
   players: PlayerSummary[] | null;
   teams: TeamInfo[] | null;
@@ -73,15 +79,34 @@ export interface RoomState {
   paused: boolean;
   /** 일시정지된 순간의 게임 시계 */
   pausedAt: number | null;
+  /** 누가 멈췄는지: 진행자 / 서버 재시작 복구 (화면 문구가 다르다) */
+  pauseReason: PauseReason | null;
   phaseSince: number;
   hostConnected: boolean;
   /** 지금까지 끝난 게임 요약 (큰 화면·리모컨에만) */
   history: GameSummary[] | null;
-  you: { id: string; nickname: string; color: string; teamId: string | null } | null;
+  you: {
+    id: string;
+    nickname: string;
+    color: string;
+    teamId: string | null;
+    /** 세션이 끝난 뒤에만: 오늘 같은 팀이었던 사람들 (봇 제외) */
+    met?: MetPerson[];
+  } | null;
   survey: SurveyStats | null;
   report: SessionReport | null;
   settings: RoomSettings;
   joinPath: string;
+}
+
+export type PauseReason = 'host' | 'restart';
+
+/** 끝난 뒤 참가자 폰에 보여 주는 "오늘 같은 팀이었던 사람" */
+export interface MetPerson {
+  nickname: string;
+  color: string;
+  /** 같은 팀으로 함께한 게임 수 */
+  games: number;
 }
 
 export interface ViewEnvelope {
@@ -107,6 +132,7 @@ export const ERROR_MESSAGES = {
   KICKED: '진행자가 내보낸 참가자예요',
   ROOM_FULL: '방이 가득 찼어요',
   INVALID_STATE: '지금은 할 수 없는 동작이에요',
+  SERVER_BUSY: '지금은 방을 더 만들 수 없어요. 잠시 후 다시 해 주세요',
 } as const;
 export type ErrorCode = keyof typeof ERROR_MESSAGES;
 

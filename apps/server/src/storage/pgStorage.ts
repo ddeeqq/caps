@@ -1,4 +1,5 @@
 import type { Pack, PackInput, SessionReport } from '@caps/shared';
+import { isRoomSnapshot, type RoomSnapshot } from '../room/snapshot';
 import { safeEqual } from '../util';
 import { toPack, type Storage } from './types';
 
@@ -43,6 +44,13 @@ export class PgStorage implements Storage {
         id TEXT PRIMARY KEY,
         room_code TEXT NOT NULL,
         report JSONB NOT NULL,
+        updated_at TIMESTAMPTZ NOT NULL
+      )`);
+    // 진행 중인 방들의 저장본. 행 하나(id = 'live')를 통째로 덮어쓴다
+    await this.db.query(`
+      CREATE TABLE IF NOT EXISTS room_snapshots (
+        id TEXT PRIMARY KEY,
+        snapshots JSONB NOT NULL,
         updated_at TIMESTAMPTZ NOT NULL
       )`);
   }
@@ -125,6 +133,31 @@ export class PgStorage implements Storage {
     );
     const row = rows[0];
     return row ? json(row.report) : null;
+  }
+
+  async saveRoomSnapshots(snapshots: RoomSnapshot[]): Promise<void> {
+    const now = new Date().toISOString();
+    const body = JSON.stringify(snapshots);
+    const { rows } = await this.db.query<{ id: string }>(`SELECT id FROM room_snapshots WHERE id = 'live'`);
+    if (rows.length > 0) {
+      await this.db.query(`UPDATE room_snapshots SET snapshots = $1, updated_at = $2 WHERE id = 'live'`, [
+        body,
+        now,
+      ]);
+    } else {
+      await this.db.query(`INSERT INTO room_snapshots (id, snapshots, updated_at) VALUES ('live', $1, $2)`, [
+        body,
+        now,
+      ]);
+    }
+  }
+
+  async loadRoomSnapshots(): Promise<RoomSnapshot[]> {
+    const { rows } = await this.db.query<{ snapshots: unknown }>(
+      `SELECT snapshots FROM room_snapshots WHERE id = 'live'`,
+    );
+    const raw = rows[0] ? json<unknown>(rows[0].snapshots as string) : [];
+    return Array.isArray(raw) ? raw.filter(isRoomSnapshot) : [];
   }
 
   async close(): Promise<void> {

@@ -1,7 +1,14 @@
 import { josa } from '../pack/josa';
-import { splitIntoTeams, smallestTeam, TEAM_COLORS, type TeamInfo } from '../util/teams';
+import { TEAM_COLORS, type TeamInfo } from '../util/teams';
 import { ufAllConnected, ufFind, ufLargestGroup, ufUnion, type UnionFindState } from '../util/unionFind';
-import { inputType, isConnected, nicknameOf, connectedPlayers } from './common';
+import {
+  connectedPlayers,
+  inputType,
+  isConnected,
+  nicknameOf,
+  splitHumansAndBots,
+  teamForNewcomer,
+} from './common';
 import type { GameCtx, GameModule, GameSummary } from './types';
 
 /**
@@ -233,8 +240,7 @@ export const soundmate: GameModule<SoundmateState, SoundmateHostView, SoundmateP
   },
 
   init(ctx) {
-    const players = connectedPlayers(ctx).map((p) => p.id);
-    const groups = splitIntoTeams(players, ctx.rng);
+    const groups = splitHumansAndBots(connectedPlayers(ctx), ctx.rng);
     const questions = ctx.pack.balancePool;
     const s: SoundmateState = {
       stage: 'intro',
@@ -318,7 +324,10 @@ export const soundmate: GameModule<SoundmateState, SoundmateHostView, SoundmateP
       }
       const other = teamFor(s, target);
       if (!other || other.id !== me.id) {
-        s.wrong.push({ from: playerId, to: target, at: ctx.now });
+        // 같은 사람을 여러 번 찍어도 "말 건 횟수"는 한 번만 센다 (지표 부풀림 방지)
+        if (!s.wrong.some((w) => w.from === playerId && w.to === target)) {
+          s.wrong.push({ from: playerId, to: target, at: ctx.now });
+        }
         const label = other ? soundLabel(other.soundId, other.variant) : '다른 팀';
         s.feedback[playerId] = {
           kind: 'wrong',
@@ -391,7 +400,7 @@ export const soundmate: GameModule<SoundmateState, SoundmateHostView, SoundmateP
 
   playerJoined(s, ctx, playerId) {
     if (s.teamOf[playerId]) return;
-    const team = smallestTeam(s.teams);
+    const team = teamForNewcomer(s.teams, ctx, playerId);
     if (!team) return;
     team.memberIds.push(playerId);
     s.teamOf[playerId] = team.id;

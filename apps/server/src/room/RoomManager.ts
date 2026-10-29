@@ -11,6 +11,8 @@ export interface SocketBinding {
 }
 
 const IDLE_ROOM_MS = 2 * 60 * 60 * 1000;
+/** 진행 중인 방을 저장하는 간격 (서버가 갑자기 꺼져도 이만큼만 잃는다) */
+const SNAPSHOT_EVERY_MS = 3_000;
 const IDLE_FINISHED_MS = 30 * 60 * 1000;
 const REPORT_DEBOUNCE_MS = 2_000;
 
@@ -25,6 +27,10 @@ export class RoomManager {
   private readonly reportDue = new Map<string, number>();
   private tickTimer: NodeJS.Timeout | null = null;
   private cleanupTimer: NodeJS.Timeout | null = null;
+  private snapshotTimer: NodeJS.Timeout | null = null;
+  private snapshotRun: Promise<void> | null = null;
+  /** 마지막으로 쓴 저장본 (저장 시각 제외). 같으면 다시 쓰지 않는다 */
+  private lastSnapshotKey = '';
   private reactionSeq = 0;
   stats = { ticks: 0, emits: 0, lastTickMs: 0 };
 
@@ -34,17 +40,81 @@ export class RoomManager {
     private readonly log: Logger,
   ) {}
 
-  start(tickMs = 50): void {
+  start(tickMs = 50, opts: { snapshots?: boolean } = {}): void {
     this.tickTimer = setInterval(() => this.tickAll(), tickMs);
     this.cleanupTimer = setInterval(() => void this.cleanup(), 60_000);
+    if (opts.snapshots !== false) {
+      this.snapshotTimer = setInterval(() => void this.saveSnapshots(), SNAPSHOT_EVERY_MS);
+    }
   }
 
   async stop(): Promise<void> {
     if (this.tickTimer) clearInterval(this.tickTimer);
     if (this.cleanupTimer) clearInterval(this.cleanupTimer);
+    const snapshots = this.snapshotTimer !== null;
+    if (this.snapshotTimer) clearInterval(this.snapshotTimer);
+    this.snapshotTimer = null;
     await Promise.all(
       [...this.rooms.values()].filter((r) => r.summaries.length > 0).map((r) => this.saveReport(r)),
     );
+    if (snapshots) await this.saveSnapshots(true);
+  }
+
+  /**
+   * 방을 모두 저장한다. 앞선 저장이 아직 끝나지 않았으면 건너뛴다(force면 기다렸다가 쓴다).
+   * 게임 시계가 흐르는 방이 없고 내용도 그대로면 쓰지 않는다 — 한가한 서버는 디스크를 건드리지 않는다.
+   * 방이 모두 없어진 뒤에도 빈 목록을 한 번 써서 지난 저장본을 지운다.
+   */
+  async saveSnapshots(force = false): Promise<void> {
+    if (this.snapshotRun) {
+      if (!force) return;
+      await this.snapshotRun;
+    }
+    const run = this.writeSnapshots(force);
+    this.snapshotRun = run;
+    try {
+      await run;
+    } finally {
+      if (this.snapshotRun === run) this.snapshotRun = null;
+    }
+  }
+
+  private async writeSnapshots(force: boolean): Promise<void> {
+    try {
+      const snaps = [...this.rooms.values()].map((r) => r.toSnapshot());
+      const ticking = snaps.some(
+        (s) => s.pausedAt === null && (s.phase === 'intro' || s.phase === 'playing'),
+      );
+      const key = JSON.stringify(snaps, (k, v: unknown) => (k === 'savedAt' ? 0 : v));
+      if (!force && !ticking && key === this.lastSnapshotKey) return;
+      await this.storage.saveRoomSnapshots(snaps);
+      this.lastSnapshotKey = key;
+    } catch (err) {
+      this.log.error('방 저장 실패', err);
+    }
+  }
+
+  /**
+   * 서버를 다시 켰을 때 저장본으로 방을 되살린다. 오래 쉬던 방은 버린다.
+   * 사람들은 폰이 자동으로 다시 연결되면서 같은 사람으로 돌아온다.
+   */
+  async restore(): Promise<number> {
+    const snaps = await this.storage.loadRoomSnapshots();
+    const now = Date.now();
+    let restored = 0;
+    for (const snap of snaps) {
+      if (this.rooms.has(snap.code)) continue;
+      const idle = now - snap.lastActivity;
+      if (idle > IDLE_ROOM_MS || (snap.phase === 'finished' && idle > IDLE_FINISHED_MS)) continue;
+      try {
+        this.rooms.set(snap.code, Room.fromSnapshot(snap));
+        restored += 1;
+      } catch (err) {
+        this.log.error(`방 복구 실패 ${snap.code}`, err);
+      }
+    }
+    if (restored) this.log.info(`방 ${restored}개 복구 (일시정지 상태로 이어서 진행)`);
+    return restored;
   }
 
   createRoom(opts: Omit<RoomOptions, 'code'>): Room {
@@ -125,6 +195,10 @@ export class RoomManager {
     for (const room of this.rooms.values()) {
       const wasFinished = room.phase === 'finished';
       try {
+        room.tickBots((rec, kind) => {
+          room.reactions += 1;
+          this.emitReaction(room, { kind, color: rec.color, nickname: rec.nickname });
+        });
         room.tick();
       } catch (err) {
         this.log.error(`게임 진행 오류 ${room.code}`, err);
@@ -187,13 +261,15 @@ export class RoomManager {
   private async cleanup(): Promise<void> {
     const now = Date.now();
     for (const [code, room] of this.rooms) {
+      // 봇은 사람이 아니다: 봇만 남은 방도 정리한다
       const anyone =
-        room.hostSockets.size > 0 || room.remoteSockets.size > 0 || room.connectedPlayers().length > 0;
+        room.hostSockets.size > 0 || room.remoteSockets.size > 0 || room.connectedHumans().length > 0;
       if (anyone) continue;
       const idle = now - room.lastActivity;
       if (idle > IDLE_ROOM_MS || (room.phase === 'finished' && idle > IDLE_FINISHED_MS)) {
         if (room.summaries.length > 0) await this.saveReport(room);
         this.rooms.delete(code);
+        this.reportDue.delete(code);
         this.log.info(`방 정리 ${code}`);
       }
     }

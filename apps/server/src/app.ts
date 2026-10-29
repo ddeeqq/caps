@@ -13,6 +13,8 @@ export interface CapsServer {
   io: Server<ClientToServerEvents, ServerToClientEvents>;
   manager: RoomManager;
   listen(port: number, host?: string): Promise<number>;
+  /** 저장본으로 방을 되살린다 (서버 재시작 직후, 접속을 받기 전에) */
+  restoreRooms(): Promise<number>;
   close(): Promise<void>;
 }
 
@@ -22,6 +24,8 @@ export function createCapsServer(opts: {
   log?: Logger;
   tickMs?: number;
   allowCors?: boolean;
+  /** 진행 중인 방을 주기적으로 저장 (기본 켬) */
+  snapshots?: boolean;
 }): CapsServer {
   const log = opts.log ?? createLogger();
   const httpServer = createHttpServer();
@@ -37,7 +41,7 @@ export function createCapsServer(opts: {
   const app = createHttpApp({ storage: opts.storage, manager, log, webDist: opts.webDist ?? null });
   httpServer.on('request', app);
   registerSocketHandlers(io, manager, opts.storage, log);
-  manager.start(opts.tickMs ?? 50);
+  manager.start(opts.tickMs ?? 50, { snapshots: opts.snapshots });
 
   return {
     httpServer,
@@ -48,6 +52,9 @@ export function createCapsServer(opts: {
         httpServer.once('error', reject);
         httpServer.listen(port, host, () => resolve((httpServer.address() as AddressInfo).port));
       });
+    },
+    restoreRooms() {
+      return manager.restore();
     },
     async close() {
       await manager.stop();

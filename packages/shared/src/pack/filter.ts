@@ -16,7 +16,6 @@ const BANNED = [
   'ㅈㄴ',
   '지랄',
   '닥쳐',
-  '꺼져',
   'fuck',
   'shit',
   'bitch',

@@ -1,27 +1,20 @@
 import {
-  applyRule,
+  BotBrain,
+  BotHub,
   estimateOffset,
-  REACTION_KINDS,
-  VAULT_LEVELS,
   type Ack,
-  type CardsectionPlayerView,
+  type CardsectionHostView,
   type ClientToServerEvents,
   type ClockSample,
   type HostCommand,
   type HostCreatePayload,
-  type MinorityPlayerView,
-  type NunchiPlayerView,
   type RoomState,
   type ServerToClientEvents,
-  type SoundmatePlayerView,
-  type TiltracePlayerView,
-  type VaultPlayerView,
-  type VaultRule,
   type ViewEnvelope,
-  type CardsectionHostView,
 } from '@caps/shared';
 import { io, type Socket } from 'socket.io-client';
 
+export { BotHub };
 export type ClientSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -81,59 +74,6 @@ export class ClockClient {
   }
 }
 
-/** 같은 프로세스의 봇끼리 "말로 나누는 정보"를 흉내 내는 공유 메모 */
-export class BotHub {
-  private sounds = new Map<string, Map<string, string>>();
-  private vault = new Map<
-    string,
-    { order?: string[]; table?: Array<{ symbol: string; digit: number }>; rule?: string }
-  >();
-
-  registerSound(key: string, playerId: string, code: string): void {
-    if (!code) return;
-    let m = this.sounds.get(key);
-    if (!m) this.sounds.set(key, (m = new Map()));
-    m.set(playerId, code);
-  }
-
-  sameSound(key: string, me: string): string[] {
-    return [...(this.sounds.get(key) ?? new Map<string, string>()).entries()]
-      .filter(([id]) => id !== me)
-      .map(([, c]) => c);
-  }
-
-  otherSounds(key: string): string[] {
-    return [...this.sounds.entries()].filter(([k]) => k !== key).flatMap(([, m]) => [...m.values()]);
-  }
-
-  vaultInfo(key: string) {
-    let v = this.vault.get(key);
-    if (!v) this.vault.set(key, (v = {}));
-    return v;
-  }
-}
-
-export function parseRule(text: string | null | undefined): VaultRule | null {
-  if (!text) return null;
-  const pos = /(\d+)번째/.exec(text);
-  if (text.includes('1을 더해서') && pos) return { kind: 'plus', pos: Number(pos[1]) - 1, text };
-  if (text.includes('9에서')) return { kind: 'nineMinus', pos: -1, text };
-  if (text.includes('바꿔서')) return { kind: 'swap', text };
-  if (text.includes('거꾸로')) return { kind: 'reverse', text };
-  return null;
-}
-
-function solveVault(
-  order: string[],
-  table: Array<{ symbol: string; digit: number }>,
-  ruleText?: string,
-): string {
-  const raw = order.map((sym) => table.find((e) => e.symbol === sym)?.digit ?? 0);
-  const rule = parseRule(ruleText);
-  if (rule?.kind === 'nineMinus') rule.pos = raw.length - 1;
-  return applyRule(raw, rule).join('');
-}
-
 export interface BotOptions {
   url: string;
   code: string;
@@ -147,7 +87,7 @@ export interface BotOptions {
   chatty?: boolean;
 }
 
-/** 가짜 참가자. 실제 폰과 같은 소켓 이벤트만 쓴다. */
+/** 가짜 참가자. 실제 폰과 같은 소켓 이벤트만 쓰고, 행동은 공용 BotBrain이 정한다. */
 export class Bot {
   readonly socket: ClientSocket;
   readonly clock: ClockClient;
@@ -159,13 +99,9 @@ export class Bot {
   received = 0;
   kicked = false;
   private timer: NodeJS.Timeout | null = null;
-  private memo = new Map<string, number>();
-  private counters = { link: 0, tilt: 0 };
-  private tilt = 0;
-  private readonly speed: number;
+  private brain: BotBrain | null = null;
 
   constructor(private readonly opts: BotOptions) {
-    this.speed = opts.speed ?? 1;
     this.socket = connectSocket(opts.url);
     this.clock = new ClockClient(this.socket);
     this.socket.on('room', (s) => {
@@ -195,6 +131,12 @@ export class Bot {
     this.playerId = res.playerId;
     this.token = res.token;
     this.nickname = res.nickname;
+    this.brain = new BotBrain(res.playerId, {
+      hub: this.opts.hub,
+      speed: this.opts.speed,
+      mistakes: this.opts.mistakes,
+      chatty: this.opts.chatty,
+    });
     this.timer = setInterval(() => this.think(), 100);
     return performance.now() - started;
   }
@@ -221,152 +163,19 @@ export class Bot {
     this.socket.emit('player:input', { input, at: this.clock.serverNow() });
   }
 
-  /** key마다 한 번 무작위 지연을 정하고, 그 시각이 지나면 true */
-  private ready(key: string, minMs: number, maxMs: number): boolean {
-    const now = Date.now();
-    let at = this.memo.get(key);
-    if (at === undefined) {
-      at = now + (minMs + Math.random() * (maxMs - minMs)) * this.speed;
-      this.memo.set(key, at);
-    }
-    return now >= at;
-  }
-
-  private done(key: string, retryAfterMs = Infinity): void {
-    this.memo.set(key, retryAfterMs === Infinity ? Infinity : Date.now() + retryAfterMs);
-  }
-
   private think(): void {
     const r = this.room;
-    if (!r) return;
-    if (r.phase === 'lobby' && !this.memo.has('survey-lobby')) {
-      this.memo.set('survey-lobby', 1);
-      if (Math.random() < 0.8)
-        this.socket.emit('player:survey', { phase: 'lobby', comfort: 2 + Math.floor(Math.random() * 3) });
+    if (!r || !this.brain) return;
+    for (const action of this.brain.think({
+      phase: r.phase,
+      paused: r.paused,
+      view: this.view,
+      gameNow: this.gameNow(),
+    })) {
+      if (action.type === 'input') this.send(action.input);
+      else if (action.type === 'survey') this.socket.emit('player:survey', action.answer);
+      else this.socket.emit('player:react', action.kind);
     }
-    if (r.phase === 'finished' && !this.memo.has('survey-end')) {
-      this.memo.set('survey-end', 1);
-      this.socket.emit('player:survey', {
-        phase: 'end',
-        comfort: 3 + Math.floor(Math.random() * 3),
-        newPeople: 1 + Math.floor(Math.random() * 3),
-      });
-    }
-    if (this.opts.chatty && Math.random() < 0.01) {
-      this.socket.emit('player:react', REACTION_KINDS[Math.floor(Math.random() * REACTION_KINDS.length)]!);
-    }
-    const env = this.view;
-    if (!env || env.phase !== 'playing' || r.paused || !env.view) return;
-    switch (env.gameId) {
-      case 'nunchi':
-        return this.nunchi(env.view as NunchiPlayerView);
-      case 'soundmate':
-        return this.soundmate(env.view as SoundmatePlayerView);
-      case 'vault':
-        return this.vault(env.view as VaultPlayerView);
-      case 'cardsection':
-        return this.cardsection(env.view as CardsectionPlayerView);
-      case 'minority':
-        return this.minority(env.view as MinorityPlayerView);
-      case 'tiltrace':
-        return this.tiltrace(env.view as TiltracePlayerView);
-    }
-  }
-
-  private nunchi(v: NunchiPlayerView): void {
-    if (!v.canTap || (v.stage !== 'open' && v.stage !== 'countdown')) return;
-    const key = `nunchi:${v.round}`;
-    let plan = this.memo.get(key);
-    if (plan === undefined) {
-      plan = v.openAt + (250 + Math.random() * 5000) * this.speed;
-      this.memo.set(key, plan);
-    }
-    if (this.gameNow() >= plan) {
-      this.memo.set(key, Infinity);
-      this.send({ type: 'tap' });
-    }
-  }
-
-  private soundmate(v: SoundmatePlayerView): void {
-    const hub = this.opts.hub;
-    if (!hub) return;
-    const soundKey = `${v.soundId}:${v.variant}`;
-    hub.registerSound(soundKey, this.playerId, v.myCode);
-    if (v.stage === 'search' && !v.teamComplete) {
-      const key = `sm-link:${this.counters.link}`;
-      if (this.ready(key, 700, 2600)) {
-        this.counters.link += 1;
-        const wrong = this.opts.mistakes !== false && Math.random() < 0.15;
-        const pool = wrong ? hub.otherSounds(soundKey) : hub.sameSound(soundKey, this.playerId);
-        const code = pool[Math.floor(Math.random() * pool.length)];
-        if (code) this.send({ type: 'link', code });
-      }
-    }
-    const m = v.mission;
-    if (m && m.decided === null) {
-      if (m.myVote === null && this.ready(`sm-vote:${v.teamName}`, 400, 2000)) {
-        this.send({ type: 'vote', choice: Math.random() < 0.75 ? 'a' : 'b' });
-      } else if (m.myVote) {
-        const other = m.myVote === 'a' ? 'b' : 'a';
-        const mine = m.myVote === 'a' ? m.votesA : m.votesB;
-        const theirs = other === 'a' ? m.votesA : m.votesB;
-        const key = `sm-switch:${v.teamName}:${m.votesA}:${m.votesB}`;
-        if (theirs > mine && this.ready(key, 800, 2000)) {
-          this.done(key);
-          this.send({ type: 'vote', choice: other });
-        }
-      }
-    }
-  }
-
-  private vault(v: VaultPlayerView): void {
-    const hub = this.opts.hub;
-    if (!hub || v.status !== 'active') return;
-    const key = `${v.teamName}#${v.safeIndex}`;
-    const info = hub.vaultInfo(key);
-    if (v.order) info.order = v.order;
-    if (v.table) info.table = v.table;
-    if (v.rule) info.rule = v.rule;
-    if (!v.roles.includes('input')) return;
-    const level = VAULT_LEVELS[Math.min(v.level - 1, VAULT_LEVELS.length - 1)];
-    if (!info.order || !info.table || (level?.rule && !info.rule)) return;
-    if (this.gameNow() < v.lockedUntil) return;
-    const attemptKey = `vault:${key}:${v.attempts}`;
-    if (!this.ready(attemptKey, 1200, 3500)) return;
-    this.done(attemptKey, 4_000);
-    const answer = solveVault(info.order, info.table, info.rule);
-    const wrongFirst = this.opts.mistakes !== false && v.attempts === 0 && Math.random() < 0.25;
-    const code = wrongFirst ? `${(Number(answer[0]) + 1) % 10}${answer.slice(1)}` : answer;
-    this.send({ type: 'submit', code });
-  }
-
-  private cardsection(v: CardsectionPlayerView): void {
-    if (v.stage !== 'seat' || v.mySeat) return;
-    if (!this.ready('seat', 300, 2500)) return;
-    this.done('seat', 2_000);
-    const taken = new Set(v.taken.map(([r, c]) => `${r}:${c}`));
-    const free: Array<[number, number]> = [];
-    for (let r = 0; r < v.rows; r++)
-      for (let c = 0; c < v.cols; c++) if (!taken.has(`${r}:${c}`)) free.push([r, c]);
-    const pick = free[Math.floor(Math.random() * free.length)] ?? [0, 0];
-    this.send({ type: 'seat', row: pick[0], col: pick[1] });
-  }
-
-  private minority(v: MinorityPlayerView): void {
-    if (v.stage !== 'talk' && v.stage !== 'vote') return;
-    const choice = Math.random() < 0.5 ? 'a' : 'b';
-    if (v.alive && !v.myVote && this.ready(`mv:${v.round}`, 200, 1800)) this.send({ type: 'vote', choice });
-    if (!v.alive && !v.myPrediction && this.ready(`mp:${v.round}`, 200, 1800))
-      this.send({ type: 'predict', choice });
-  }
-
-  private tiltrace(v: TiltracePlayerView): void {
-    if (v.stage !== 'race' && v.stage !== 'countdown') return;
-    const key = `tilt:${this.counters.tilt}`;
-    if (!this.ready(key, 120, 220)) return;
-    this.counters.tilt += 1;
-    this.tilt = Math.max(-1, Math.min(1, this.tilt * 0.8 + (Math.random() - 0.5) * 0.8 - v.x * 0.3));
-    this.send({ type: 'tilt', v: Math.round(this.tilt * 100) / 100 });
   }
 }
 

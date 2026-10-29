@@ -1,13 +1,16 @@
 import { GAME_META, type RoomState } from '@caps/shared';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Caption, QRImage, ReactionLayer, Spinner, Stickers, Wordmark } from '../components/ui';
 import { FinalReport, HostIntro, HostResult } from '../games/common';
 import { HOST_VIEWS, STAGE_TONE } from '../games';
 import { enterFullscreen } from '../lib/device';
+import { useSoundCue } from '../lib/hooks';
+import { audioReady, isMuted, setMuted, unlockAudio } from '../lib/sound';
 import { useClientSnapshot, useRoomClient, type RoomClient } from '../lib/roomClient';
 import { Link } from '../lib/router';
 import { keys, local } from '../lib/storage';
-import { hostActions, runAction, type HostAction } from './hostActions';
+import { hostActions, runAction, type ConfirmFn, type HostAction } from './hostActions';
 
 function joinUrlFor(room: RoomState): string {
   return `${window.location.origin}${room.joinPath}`;
@@ -38,6 +41,7 @@ function Lobby({ room }: { room: RoomState }) {
         <div className="lobby__count">
           <Caption className="lobby__num">{room.playerCount}</Caption>
           <span>명 입장</span>
+          {room.botCount > 0 && <span className="lobby__bots">봇 {room.botCount}명 포함</span>}
         </div>
         {players.length === 0 ? (
           <p className="lobby__empty">첫 번째로 들어올 사람을 기다리는 중이에요</p>
@@ -62,6 +66,31 @@ function Lobby({ room }: { room: RoomState }) {
   );
 }
 
+/**
+ * 큰 화면의 방송 효과음: 새 게임 소개 징글, 결과 팡파레, 대기실 입장 톡.
+ * 브라우저는 사용자가 화면을 한 번 누르기 전에는 소리를 막으므로, 첫 클릭·키 입력에 오디오를 연다.
+ */
+function StageSounds({ room }: { room: RoomState }) {
+  useEffect(() => {
+    const unlock = () => {
+      if (!isMuted()) void unlockAudio();
+    };
+    window.addEventListener('pointerdown', unlock);
+    window.addEventListener('keydown', unlock);
+    return () => {
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+  }, []);
+  useSoundCue(`${room.phase}:${room.index}`, (_a, b) => {
+    if (b.startsWith('intro:')) return 'jingle';
+    if (b.startsWith('result:') || b.startsWith('finished:')) return 'fanfare';
+    return null;
+  });
+  useSoundCue(room.phase === 'lobby' ? room.playerCount : -1, (a, b) => (a >= 0 && b > a ? 'pop' : null));
+  return null;
+}
+
 function Dock({ client, room, pin }: { client: RoomClient; room: RoomState; pin: string | null }) {
   const snap = useClientSnapshot(client);
   const { primary, extra } = hostActions(room, snap.view);
@@ -69,6 +98,21 @@ function Dock({ client, room, pin }: { client: RoomClient; room: RoomState; pin:
   const [showRemote, setShowRemote] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const hideTimer = useRef(0);
+  const [soundOn, setSoundOn] = useState(() => !isMuted() && audioReady());
+  const toggleSound = async () => {
+    if (soundOn) {
+      setMuted(true);
+      setSoundOn(false);
+    } else {
+      setMuted(false);
+      setSoundOn(await unlockAudio());
+    }
+  };
+  // 첫 클릭으로 오디오가 열리면 버튼 표시도 맞춘다
+  useEffect(() => {
+    const id = window.setInterval(() => setSoundOn(!isMuted() && audioReady()), 1_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   useEffect(() => {
     const wake = () => {
@@ -88,12 +132,26 @@ function Dock({ client, room, pin }: { client: RoomClient; room: RoomState; pin:
     };
   }, []);
 
-  const run = async (a: HostAction) => setError(await runAction(client, a));
+  // 확인 창은 화면 안에 띄운다 (브라우저 기본 확인 창은 전체 화면을 풀어 버린다)
+  const [ask, setAsk] = useState<{ message: string; resolve: (ok: boolean) => void } | null>(null);
+  const confirm: ConfirmFn = (message) => new Promise((resolve) => setAsk({ message, resolve }));
+  const answer = (ok: boolean) => {
+    ask?.resolve(ok);
+    setAsk(null);
+  };
+  const run = async (a: HostAction) => setError(await runAction(client, a, confirm));
 
-  // 발표용 단축키: Space·Enter·→ 다음, P 일시정지, F 전체 화면
+  // 발표용 단축키: Space·Enter·→ 다음, P 일시정지, F 전체 화면, M 효과음 (확인 창이 떠 있으면 Enter 예, Esc 아니요)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.closest('input, textarea, select')) return;
+      if (ask) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          answer(true);
+        } else if (e.key === 'Escape') answer(false);
+        return;
+      }
       if ((e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowRight') && primary) {
         e.preventDefault();
         void run(primary);
@@ -101,6 +159,8 @@ function Dock({ client, room, pin }: { client: RoomClient; room: RoomState; pin:
         void client.command({ type: room.paused ? 'resume' : 'pause' });
       } else if (e.key.toLowerCase() === 'f') {
         void enterFullscreen();
+      } else if (e.key.toLowerCase() === 'm') {
+        void toggleSound();
       }
     };
     window.addEventListener('keydown', onKey);
@@ -108,7 +168,26 @@ function Dock({ client, room, pin }: { client: RoomClient; room: RoomState; pin:
   });
 
   return (
-    <div className={`dock ${visible || showRemote ? '' : 'is-hidden'}`}>
+    <div className={`dock ${visible || showRemote || ask ? '' : 'is-hidden'}`}>
+      {ask &&
+        createPortal(
+          <div className="confirm" role="alertdialog" aria-modal="true" aria-labelledby="confirm-msg">
+            <div className="confirm__box">
+              <p id="confirm-msg" className="confirm__msg">
+                {ask.message}
+              </p>
+              <div className="confirm__row">
+                <button type="button" className="btn" onClick={() => answer(false)}>
+                  아니요
+                </button>
+                <button type="button" className="btn btn--primary" autoFocus onClick={() => answer(true)}>
+                  네, 진행할게요
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
       {error && <p className="dock__error">{error}</p>}
       {showRemote && pin && (
         <div className="dock__remote">
@@ -146,6 +225,14 @@ function Dock({ client, room, pin }: { client: RoomClient; room: RoomState; pin:
         </button>
         <button type="button" className="btn btn--small" onClick={() => void enterFullscreen()}>
           전체 화면
+        </button>
+        <button
+          type="button"
+          className={`btn btn--small ${soundOn ? '' : 'btn--sun'}`}
+          onClick={() => void toggleSound()}
+          aria-pressed={soundOn}
+        >
+          {soundOn ? '효과음 끄기' : '효과음 켜기'}
         </button>
         {primary && (
           <button type="button" className="btn btn--primary" onClick={() => void run(primary)}>
@@ -255,9 +342,21 @@ export function HostScreen({ code }: { code: string }) {
       </main>
       {room.paused && (
         <div className="pause-cover" aria-live="polite">
-          <Caption tone="sun">잠깐 멈춤</Caption>
+          {room.pauseReason === 'restart' ? (
+            <div className="pause-cover__restart">
+              <Caption tone="sun">이어서 할 준비 중</Caption>
+              <p>
+                서버가 다시 켜져서 멈춘 자리에서 기다리고 있어요. 참가자 폰은 저절로 돌아와요 (지금{' '}
+                {room.playerCount - room.botCount}명)
+              </p>
+              <p>모두 돌아오면 다시 진행을 눌러 주세요</p>
+            </div>
+          ) : (
+            <Caption tone="sun">잠깐 멈춤</Caption>
+          )}
         </div>
       )}
+      <StageSounds room={room} />
       <Dock client={client} room={room} pin={pin} />
       <ReactionLayer client={client} lane={room.phase === 'lobby' ? [48, 94] : undefined} />
     </div>

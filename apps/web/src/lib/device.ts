@@ -4,18 +4,32 @@ type OrientationCtor = typeof DeviceOrientationEvent & {
   requestPermission?: () => Promise<'granted' | 'denied'>;
 };
 
+let motionGranted = false;
+
 /** iOS는 버튼 탭 안에서 권한을 요청해야 기울기 센서가 켜진다 */
 export async function requestMotion(): Promise<boolean> {
   const D = (window as unknown as { DeviceOrientationEvent?: OrientationCtor }).DeviceOrientationEvent;
   if (!D) return false;
   if (typeof D.requestPermission === 'function') {
     try {
-      return (await D.requestPermission()) === 'granted';
+      motionGranted = (await D.requestPermission()) === 'granted';
     } catch {
-      return false;
+      motionGranted = false;
     }
+    return motionGranted;
   }
+  motionGranted = true;
   return true;
+}
+
+/**
+ * 버튼을 다시 누르지 않아도 센서를 켤 수 있는지.
+ * 소개 화면에서 이미 허락받았거나(iOS), 권한 요청이 필요 없는 브라우저(안드로이드 등)면 true.
+ */
+export function motionReady(): boolean {
+  if (motionGranted) return true;
+  const D = (window as unknown as { DeviceOrientationEvent?: OrientationCtor }).DeviceOrientationEvent;
+  return !!D && typeof D.requestPermission !== 'function' && isTouchDevice();
 }
 
 /** 좌우 기울기를 -1 ~ 1로 (세로로 들었을 때 35도면 끝까지) */

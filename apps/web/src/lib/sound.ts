@@ -21,6 +21,16 @@ function audio(): { a: AudioContext; out: GainNode } | null {
 }
 
 export async function unlockAudio(): Promise<boolean> {
+  // iOS 사파리는 무음 스위치가 켜져 있으면 Web Audio도 조용해진다.
+  // 오디오 세션을 "재생"으로 두면 무음 모드에서도 소리가 난다 (사파리 16.4+, 없으면 무시)
+  const session = (navigator as unknown as { audioSession?: { type: string } }).audioSession;
+  if (session) {
+    try {
+      session.type = 'playback';
+    } catch {
+      /* 지원하지 않는 값이면 그대로 둔다 */
+    }
+  }
   const au = audio();
   if (!au) return false;
   try {
@@ -266,14 +276,117 @@ export function playAnimal(soundId: string, variant = 0): void {
   if (variant === 1) voice(au.a, au.out, t + dur * 0.8);
 }
 
-export type Sfx = 'tap' | 'ok' | 'fail' | 'tick' | 'boom' | 'win' | 'pop';
+export type Sfx =
+  | 'tap'
+  | 'ok'
+  | 'fail'
+  | 'tick'
+  | 'boom'
+  | 'win'
+  | 'pop'
+  | 'count'
+  | 'go'
+  | 'jingle'
+  | 'fanfare'
+  | 'drumroll'
+  | 'whistle';
+
+// ── 큰 화면 효과음 끄기 (진행자 선택, 이 기기에만 저장) ──
+const MUTE_KEY = 'malmun:muted';
+let muted = (() => {
+  try {
+    return localStorage.getItem(MUTE_KEY) === '1';
+  } catch {
+    return false;
+  }
+})();
+
+export function isMuted(): boolean {
+  return muted;
+}
+
+export function setMuted(next: boolean): void {
+  muted = next;
+  try {
+    localStorage.setItem(MUTE_KEY, next ? '1' : '0');
+  } catch {
+    /* 저장 못 해도 이번 화면에서는 적용된다 */
+  }
+}
 
 export function sfx(kind: Sfx): void {
+  if (muted) return;
   const au = audio();
   if (!au || au.a.state !== 'running') return;
   const { a, out } = au;
   const t = a.currentTime + 0.005;
   switch (kind) {
+    // 큰 화면용: 예능 방송 같은 진행 효과음
+    case 'count':
+      tone(a, out, {
+        type: 'square',
+        f0: 784,
+        t,
+        dur: 0.09,
+        peak: 0.18,
+        release: 0.05,
+        filter: { type: 'lowpass', freq: 2400 },
+      });
+      break;
+    case 'go':
+      tone(a, out, {
+        type: 'square',
+        f0: 1568,
+        t,
+        dur: 0.32,
+        peak: 0.2,
+        release: 0.12,
+        filter: { type: 'lowpass', freq: 3600 },
+      });
+      tone(a, out, { type: 'triangle', f0: 784, t, dur: 0.32, peak: 0.2, release: 0.12 });
+      break;
+    case 'jingle':
+      // 새 게임 소개: 위로 튀는 아르페지오 + 반짝
+      [523, 659, 784, 1047, 1319].forEach((f, i) =>
+        tone(a, out, { type: 'triangle', f0: f, t: t + i * 0.07, dur: 0.1, peak: 0.24, release: 0.08 }),
+      );
+      tone(a, out, { type: 'sine', f0: 2093, f1: 2637, t: t + 0.36, dur: 0.25, peak: 0.12, release: 0.2 });
+      break;
+    case 'fanfare':
+      // 결과 발표: 금관 느낌의 화음 두 번
+      for (const [k, chord] of [
+        [0, [392, 494, 587]],
+        [0.22, [523, 659, 784]],
+      ] as Array<[number, number[]]>) {
+        for (const f of chord)
+          tone(a, out, {
+            type: 'sawtooth',
+            f0: f,
+            t: t + k,
+            dur: k === 0 ? 0.16 : 0.6,
+            peak: 0.11,
+            attack: 0.02,
+            release: 0.25,
+            filter: { type: 'lowpass', freq: 2200, q: 0.8 },
+          });
+      }
+      break;
+    case 'drumroll':
+      // 공개 직전 긴장감: 점점 커지는 스네어 연타 (약 1.2초)
+      for (let i = 0; i < 24; i++) noise(a, out, t + i * 0.05, 0.04, 1800, 0.06 + i * 0.012);
+      break;
+    case 'whistle':
+      tone(a, out, {
+        type: 'sine',
+        f0: 2300,
+        t,
+        dur: 0.45,
+        peak: 0.22,
+        vibHz: 32,
+        vibDepth: 70,
+        release: 0.1,
+      });
+      break;
     case 'tap':
       tone(a, out, { type: 'sine', f0: 880, t, dur: 0.04, peak: 0.25, release: 0.04 });
       break;

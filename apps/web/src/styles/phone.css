@@ -164,6 +164,23 @@
 .p-end__title {
   font-size: clamp(2.3rem, 10.5vw, 3.052rem);
 }
+.p-met__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.p-met__list li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  font-weight: 750;
+}
 
 /* 판정 화면 (벌칙 / 생존) */
 .verdict {

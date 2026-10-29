@@ -1,7 +1,7 @@
 import type { SoundmateHostView, SoundmatePlayerView } from '@caps/shared';
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import { Caption, QRImage, Sheet, TimerBar, Toast } from '../components/ui';
-import { secondsLeft, useTicker } from '../lib/hooks';
+import { secondsLeft, useSoundCue, useTicker } from '../lib/hooks';
 import { startScanner, type Scanner } from '../lib/qr';
 import { buzz, playAnimal, sfx, unlockAudio } from '../lib/sound';
 import type { GameProps } from './types';
@@ -12,6 +12,7 @@ export function SoundmateHost({ view, client }: GameProps<SoundmateHostView>) {
   useTicker(500);
   const now = client.gameNow();
   const complete = view.teams.filter((t) => t.complete).length;
+  useSoundCue(complete, (a, b) => (b > a ? 'win' : null));
   return (
     <section className="sm-host">
       <header className="sm-host__head">

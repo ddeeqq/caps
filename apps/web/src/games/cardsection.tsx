@@ -2,7 +2,7 @@ import { SHOW_SEGMENTS, showFrame, type CardsectionHostView, type CardsectionPla
 import { useEffect, useMemo, useRef, type CSSProperties } from 'react';
 import { Caption } from '../components/ui';
 import { keepScreenOn } from '../lib/device';
-import { useAnimationFrame, useTicker } from '../lib/hooks';
+import { useAnimationFrame, useCountdownBeeps, useTicker } from '../lib/hooks';
 import { buzz, sfx } from '../lib/sound';
 import type { GameProps } from './types';
 
@@ -15,6 +15,8 @@ export function CardsectionHost({ view, client }: GameProps<CardsectionHostView>
     return m;
   }, [view.seats]);
   const show = view.stage === 'show' ? view.show : null;
+  // 폰들의 3·2·1 깜빡임(연출 첫 3초)에 맞춰 큰 화면이 삐 소리를 낸다
+  useCountdownBeeps(show ? show.startAt + (3_000 * show.durationMs) / 40_000 : null, () => client.gameNow());
 
   // 큰 화면 시뮬레이터: 폰과 똑같은 프레임 함수로 그린다
   useAnimationFrame(() => {
@@ -165,6 +167,7 @@ export function CardsectionPlayer({ view, client }: GameProps<CardsectionPlayerV
           type="button"
           className={`seat ${mine ? 'is-mine' : ''} ${other ? 'is-taken' : ''}`}
           aria-label={`${r + 1}번째 줄 ${c + 1}번째 자리${mine ? ' (내 자리)' : other ? ' (다른 사람)' : ''}`}
+          disabled={other}
           onClick={() => {
             client.input({ type: 'seat', row: r, col: c });
             sfx('tap');

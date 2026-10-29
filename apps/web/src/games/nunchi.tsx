@@ -1,7 +1,7 @@
 import type { NunchiHostView, NunchiPlayerView } from '@caps/shared';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Caption } from '../components/ui';
-import { useTicker } from '../lib/hooks';
+import { useCountdownBeeps, useSoundCue, useTicker } from '../lib/hooks';
 import { buzz, sfx } from '../lib/sound';
 import type { GameProps } from './types';
 
@@ -48,6 +48,12 @@ export function NunchiHost({ view, client }: GameProps<NunchiHostView>) {
   useTicker(100, view.stage === 'countdown');
   const now = client.gameNow();
   const outcome = view.outcome;
+  // 큰 화면 효과음: 3·2·1 → 숫자를 외칠 때마다 톡 → 충돌이면 쾅
+  useCountdownBeeps(view.stage === 'countdown' ? view.openAt : null, () => client.gameNow());
+  useSoundCue(view.claimedCount, (a, b) => (b > a ? 'pop' : null));
+  useSoundCue(view.stage === 'roundEnd' ? `${view.round}:${outcome?.kind ?? ''}` : null, (_a, b) =>
+    b === null ? null : b.endsWith(':collision') ? 'boom' : 'fail',
+  );
 
   let body;
   if (view.stage === 'countdown' && now < view.openAt) {
@@ -133,6 +139,15 @@ export function NunchiHost({ view, client }: GameProps<NunchiHostView>) {
 
 export function NunchiPlayer({ view, client }: GameProps<NunchiPlayerView>) {
   useTicker(100, view.stage === 'countdown');
+  // 100ms 간격 표시와 별개로, 열리는 정확한 순간에 한 번 더 그린다
+  const [, setOpened] = useState(0);
+  useEffect(() => {
+    if (view.stage !== 'countdown') return;
+    const wait = view.openAt - client.gameNow();
+    if (wait <= 0) return;
+    const id = window.setTimeout(() => setOpened((n) => n + 1), wait + 1);
+    return () => window.clearTimeout(id);
+  }, [view.stage, view.openAt, client]);
   const now = client.gameNow();
   const [tappedRound, setTappedRound] = useState<number | null>(null);
   const announced = useRef<number>(0);
@@ -183,10 +198,17 @@ export function NunchiPlayer({ view, client }: GameProps<NunchiPlayerView>) {
     );
   }
 
+  // 누르는 순간의 시각으로 다시 판단한다. 화면이 열림으로 바뀌는 렌더가 몇 ms 늦어도
+  // 열린 뒤의 탭을 잃지 않게 (서버도 열리기 100ms 전까지는 받아서 열린 시각으로 맞춘다)
   const onTap = () => {
-    if (!open || pressed || !view.canTap) return;
+    if (pressed || !view.canTap) return;
+    const openNow = view.stage === 'open' || client.gameNow() >= view.openAt - 60;
+    if (!openNow) {
+      buzz(10);
+      return;
+    }
+    if (!client.input({ type: 'tap' })) return; // 연결이 끊긴 동안은 보내지 않는다
     setTappedRound(view.round);
-    client.input({ type: 'tap' });
     sfx('tap');
     buzz(25);
   };
@@ -200,8 +222,9 @@ export function NunchiPlayer({ view, client }: GameProps<NunchiPlayerView>) {
         type="button"
         className={`big-tap ${open ? 'is-open' : ''} ${pressed ? 'is-done' : ''}`}
         onPointerDown={onTap}
-        disabled={!open || pressed}
-        aria-label={pressed ? '눌렀어요' : '누르기'}
+        disabled={pressed}
+        aria-disabled={!open || pressed}
+        aria-label={pressed ? '눌렀어요' : open ? '누르기' : '곧 열려요'}
       >
         {!open ? (
           <span className="caption caption--sun big-tap__count">

@@ -1,4 +1,4 @@
-import { GAME_META, LIMITS } from '@caps/shared';
+import { GAME_META, LIMITS, type MetPerson } from '@caps/shared';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Caption, ComfortScale, NewPeopleScale, ReactionBar, Spinner, Wordmark } from '../components/ui';
 import { PlayerIntro, PlayerResult } from '../games/common';
@@ -90,7 +90,9 @@ function PlayRoom({ code }: { code: string }) {
   useEffect(() => {
     client.setAuth(() => {
       const token = local.get(keys.player(code));
-      if (token) void join({ token });
+      // 닉네임도 같이 보낸다: 서버가 재시작됐거나 같은 코드의 새 방이면 토큰을 모르니, 같은 이름으로 새로 들어간다
+      const nickname = local.get(keys.nickname) ?? undefined;
+      if (token) void join({ token, nickname });
     });
     return () => client.setAuth(null);
   }, [client, code, join]);
@@ -188,7 +190,13 @@ function PlayerShell({ client }: { client: RoomClient }) {
   return (
     <div className={`phone ${fullBleed ? 'phone--bleed' : ''}`} data-phase={room.phase}>
       {!snap.connected && <div className="banner">연결이 끊겼어요. 다시 연결하는 중…</div>}
-      {room.paused && room.phase !== 'finished' && <div className="banner banner--calm">잠깐 멈췄어요</div>}
+      {room.paused && room.phase !== 'finished' && (
+        <div className="banner banner--calm">
+          {room.pauseReason === 'restart'
+            ? '다시 연결됐어요. 진행자가 이어서 시작할 거예요'
+            : '잠깐 멈췄어요'}
+        </div>
+      )}
       {!fullBleed && (
         <header className="phone__top">
           <span className="phone__me">
@@ -205,7 +213,7 @@ function PlayerShell({ client }: { client: RoomClient }) {
         {room.phase === 'intro' && env && <PlayerIntro gameId={env.gameId} />}
         {Game && env && <Game view={env.view} client={client} room={room} />}
         {room.phase === 'result' && <PlayerResult summary={env?.summary ?? null} />}
-        {room.phase === 'finished' && <EndSurvey client={client} />}
+        {room.phase === 'finished' && <EndSurvey client={client} met={room.you?.met ?? []} />}
       </main>
       {showReactions && (
         <footer className="phone__bottom">
@@ -274,17 +282,34 @@ function PlayerLobby({ client }: { client: RoomClient }) {
   );
 }
 
-function EndSurvey({ client }: { client: RoomClient }) {
+function EndSurvey({ client, met }: { client: RoomClient; met: MetPerson[] }) {
   const [comfort, setComfort] = useState<number | null>(null);
   const [people, setPeople] = useState<number | null>(null);
   const [sent, setSent] = useState(false);
   if (sent) {
+    // 설문에 답한 뒤에 보여 준다 (먼저 보이면 "처음 말해본 사람" 답이 흔들린다)
     return (
       <section className="p-end">
         <Caption as="h1" tone="mint" className="p-end__title">
           고마워요!
         </Caption>
-        <p>오늘 처음 말을 튼 사람에게 한마디 더 걸어 보세요.</p>
+        {met.length > 0 ? (
+          <div className="panel stack p-met">
+            <h2>오늘 같은 팀이었던 사람</h2>
+            <ul className="p-met__list">
+              {met.map((m) => (
+                <li key={m.nickname}>
+                  <span className="dot" style={{ background: m.color }} />
+                  {m.nickname}
+                  {m.games > 1 && <span className="muted"> · {m.games}게임</span>}
+                </li>
+              ))}
+            </ul>
+            <p className="muted">이름을 기억해 뒀다가 나가면서 한마디 더 걸어 보세요.</p>
+          </div>
+        ) : (
+          <p>오늘 처음 말을 튼 사람에게 한마디 더 걸어 보세요.</p>
+        )}
         <Link to="/" className="btn">
           처음으로
         </Link>

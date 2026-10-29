@@ -114,7 +114,7 @@ export function ReactionBar({ client }: { client: RoomClient }) {
           className="react-bar__btn"
           aria-label={REACTION_LABELS[kind]}
           onClick={() => {
-            client.socket.emit('player:react', kind);
+            client.react(kind);
             buzz(15);
             setBurst({ kind, id: Date.now() });
           }}
@@ -345,6 +345,8 @@ export function ChipsInput({
             else setDraft(v);
           }}
           onKeyDown={(e) => {
+            // 한글 입력 중(조합 중) 엔터는 글자 확정용이다. 여기서 추가하면 마지막 글자가 남거나 두 번 들어간다
+            if (e.nativeEvent.isComposing || e.keyCode === 229) return;
             if (e.key === 'Enter') {
               e.preventDefault();
               add(draft);

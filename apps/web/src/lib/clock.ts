@@ -20,9 +20,17 @@ export class ClockSync {
   private estimate: ClockEstimate | null = null;
   private timer: number | null = null;
   private bursting = false;
+  private listening = false;
   private listeners = new Set<() => void>();
 
   constructor(private readonly socket: Socket<ServerToClientEvents, ClientToServerEvents>) {
+    this.start();
+  }
+
+  /** 화면 복귀 감지를 켠다. stop() 뒤에 다시 연결할 때도 부른다 (StrictMode 이중 마운트 대비) */
+  start(): void {
+    if (this.listening) return;
+    this.listening = true;
     document.addEventListener('visibilitychange', this.onVisible);
   }
 
@@ -92,9 +100,11 @@ export class ClockSync {
     if (document.visibilityState === 'visible') void this.burst(5, 80);
   };
 
+  /** 주기 측정과 화면 복귀 감지를 멈춘다 (페이지를 떠날 때 타이머가 남지 않게) */
   stop(): void {
     if (this.timer !== null) window.clearInterval(this.timer);
     this.timer = null;
+    this.listening = false;
     document.removeEventListener('visibilitychange', this.onVisible);
   }
 }

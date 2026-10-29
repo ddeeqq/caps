@@ -1,7 +1,7 @@
 import type { MinorityHostView, MinorityPlayerView, MinorityVote } from '@caps/shared';
 import { useEffect, useRef } from 'react';
 import { Caption } from '../components/ui';
-import { secondsLeft, useTicker } from '../lib/hooks';
+import { secondsLeft, useCountdownBeeps, useSoundCue, useTicker } from '../lib/hooks';
 import { buzz, sfx } from '../lib/sound';
 import type { GameProps } from './types';
 
@@ -18,6 +18,13 @@ export function MinorityHost({ view, client }: GameProps<MinorityHostView>) {
   const now = client.gameNow();
   const q = view.question;
   const r = view.reveal;
+  // 작전 타임 끝 → 호루라기, 투표 마감 3·2·1, 공개 → 탈락자가 있으면 쾅, 무효면 톡
+  useCountdownBeeps(view.stage === 'vote' ? view.deadline : null, () => client.gameNow(), { go: null });
+  useSoundCue(`${view.round}:${view.stage}`, (_a, b) => {
+    if (b.endsWith(':vote')) return 'whistle';
+    if (b.endsWith(':reveal')) return r && !r.tie ? 'boom' : 'pop';
+    return null;
+  });
   return (
     <section className="mino-host">
       <header className="mino-host__head">

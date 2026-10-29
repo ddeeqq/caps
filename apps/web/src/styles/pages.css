@@ -510,6 +510,12 @@ a:has(> .wordmark) {
   font-size: var(--t-3xl);
   line-height: 1.15;
 }
+.remote__notice {
+  margin-top: 8px;
+  border-radius: 12px;
+  font-size: var(--t-sm);
+  line-height: 1.45;
+}
 .remote__primary {
   min-height: 88px;
   font-size: var(--t-2xl);

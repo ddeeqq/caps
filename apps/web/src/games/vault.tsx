@@ -7,7 +7,7 @@ import {
 } from '@caps/shared';
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Caption, TimerBar } from '../components/ui';
-import { secondsLeft, useTicker } from '../lib/hooks';
+import { secondsLeft, useSoundCue, useTicker } from '../lib/hooks';
 import { buzz, sfx } from '../lib/sound';
 import type { GameProps } from './types';
 
@@ -17,6 +17,11 @@ export function VaultHost({ view, client }: GameProps<VaultHostView>) {
   useTicker(250);
   const now = client.gameNow();
   const ranked = [...view.teams].sort((a, b) => b.solved - a.solved || a.totalMs - b.totalMs);
+  // 금고가 열릴 때마다 팡파레, 시간 안에 못 열면 실패음
+  const opened = view.teams.reduce((n, t) => n + t.solved, 0);
+  const failed = view.teams.reduce((n, t) => n + t.results.filter((r) => !r.solved).length, 0);
+  useSoundCue(opened, (a, b) => (b > a ? 'win' : null));
+  useSoundCue(failed, (a, b) => (b > a ? 'fail' : null));
   return (
     <section className="vault-host">
       <header className="vault-host__head">

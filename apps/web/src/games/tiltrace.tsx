@@ -1,8 +1,8 @@
 import { BOAT_HALF_WIDTH, type TiltraceHostView, type TiltracePlayerView } from '@caps/shared';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Caption } from '../components/ui';
-import { requestMotion, watchTilt } from '../lib/device';
-import { useAnimationFrame, useTicker } from '../lib/hooks';
+import { motionReady, requestMotion, watchTilt } from '../lib/device';
+import { useAnimationFrame, useCountdownBeeps, useSoundCue, useTicker } from '../lib/hooks';
 import { buzz } from '../lib/sound';
 import type { GameProps } from './types';
 
@@ -14,6 +14,11 @@ export function TiltraceHost({ view, client }: GameProps<TiltraceHostView>) {
   viewRef.current = view;
   useTicker(250, view.stage === 'countdown');
   const now = client.gameNow();
+  // 출발 3·2·1 → 호루라기, 배가 골인할 때마다 팡파레
+  useCountdownBeeps(view.stage === 'countdown' ? view.startAt : null, () => client.gameNow(), {
+    go: 'whistle',
+  });
+  useSoundCue(view.boats.filter((b) => b.rank !== null).length, (a, b) => (b > a ? 'win' : null));
 
   useAnimationFrame(() => {
     const canvas = canvasRef.current;
@@ -141,7 +146,8 @@ export function TiltraceHost({ view, client }: GameProps<TiltraceHostView>) {
 
 export function TiltracePlayer({ view, client }: GameProps<TiltracePlayerView>) {
   useTicker(250, view.stage === 'countdown');
-  const [sensor, setSensor] = useState<'off' | 'on' | 'denied'>('off');
+  // 소개 화면에서 이미 센서를 켰으면(또는 권한이 필요 없는 폰이면) 바로 켠 상태로 시작한다
+  const [sensor, setSensor] = useState<'off' | 'on' | 'denied'>(() => (motionReady() ? 'on' : 'off'));
   const [tilt, setTilt] = useState(0);
   const tiltRef = useRef(0);
   const holdRef = useRef(0);

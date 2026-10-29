@@ -128,6 +128,11 @@ export function Remote({ code: initialCode }: { code?: string }) {
             {room.paused ? ', 일시정지 중' : ''}
           </p>
         )}
+        {room.pauseReason === 'restart' && (
+          <p className="banner banner--calm remote__notice">
+            서버가 다시 켜져서 멈춘 자리에서 기다리는 중이에요. 참가자가 돌아오면 다시 진행을 눌러 주세요
+          </p>
+        )}
       </section>
       {primary && (
         <button

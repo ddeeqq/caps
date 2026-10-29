@@ -86,10 +86,12 @@ export class RoomClient {
   }
 
   open(): void {
+    this.clock.start();
     if (!this.socket.connected) this.socket.connect();
   }
 
   close(): void {
+    this.clock.stop();
     this.socket.disconnect();
   }
 
@@ -105,8 +107,21 @@ export class RoomClient {
     return this.clock.now() - r.timeBase;
   }
 
-  input(input: unknown): void {
-    this.socket.emit('player:input', { input, at: this.clock.now() });
+  /**
+   * 게임 입력. 연결이 끊긴 동안 누른 것은 버린다(volatile).
+   * socket.io는 끊긴 동안의 emit을 모아 두었다가 다시 연결되면 한꺼번에 보내는데,
+   * 그러면 몇 초 전의 탭·투표가 "지금" 일어난 일로 처리된다.
+   * 돌려주는 값으로 화면이 "연결 중이라 보내지 못했어요"를 알릴 수 있다.
+   */
+  input(input: unknown): boolean {
+    if (!this.socket.connected) return false;
+    this.socket.volatile.emit('player:input', { input, at: this.clock.now() });
+    return true;
+  }
+
+  /** 리액션도 끊긴 동안 쌓였다가 몰려 나가지 않게 */
+  react(kind: ReactionKind): void {
+    if (this.socket.connected) this.socket.volatile.emit('player:react', kind);
   }
 
   call<E extends keyof ClientToServerEvents>(

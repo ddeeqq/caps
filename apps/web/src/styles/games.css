@@ -896,6 +896,7 @@
 }
 .seat.is-taken {
   background: #2c2b4d;
+  cursor: not-allowed;
 }
 .seat.is-mine {
   background: var(--gum);

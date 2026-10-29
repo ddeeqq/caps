@@ -29,6 +29,16 @@ export function hostActions(
   switch (room.phase) {
     case 'lobby':
       primary = { id: 'start', label: '시작하기', tone: 'primary', cmd: { type: 'start' } };
+      // 혼자 시연하거나 사람이 모자랄 때: 서버 안의 가상 참가자로 빈자리를 채운다
+      extra.push({ id: 'add-bots', label: '봇 5명 넣기', tone: 'plain', cmd: { type: 'addBots', count: 5 } });
+      if (room.botCount > 0) {
+        extra.push({
+          id: 'clear-bots',
+          label: `봇 빼기 (${room.botCount})`,
+          tone: 'plain',
+          cmd: { type: 'clearBots' },
+        });
+      }
       break;
     case 'intro':
       primary = { id: 'go', label: '게임 시작', tone: 'primary', cmd: { type: 'next' } };
@@ -102,11 +112,13 @@ export function hostActions(
   }
 
   if (room.phase !== 'lobby' && room.phase !== 'finished') {
-    extra.push(
-      room.paused
-        ? { id: 'resume', label: '다시 진행', tone: 'sun', cmd: { type: 'resume' } }
-        : { id: 'pause', label: '일시정지', tone: 'plain', cmd: { type: 'pause' } },
-    );
+    if (room.paused) {
+      // 멈춘 동안에는 "다시 진행"이 큰 버튼(Space)이 된다. 원래 큰 버튼은 옆으로 비킨다
+      if (primary) extra.unshift({ ...primary, tone: 'plain' });
+      primary = { id: 'resume', label: '다시 진행', tone: 'primary', cmd: { type: 'resume' } };
+    } else {
+      extra.push({ id: 'pause', label: '일시정지', tone: 'plain', cmd: { type: 'pause' } });
+    }
     extra.push({
       id: 'skip',
       label: '건너뛰기',
@@ -125,8 +137,21 @@ export function hostActions(
   return { primary, extra };
 }
 
-export async function runAction(client: RoomClient, action: HostAction): Promise<string | null> {
-  if (action.confirm && !window.confirm(action.confirm)) return null;
+export type ConfirmFn = (message: string) => Promise<boolean>;
+
+/** 폰(리모컨)은 브라우저 기본 확인 창을 쓴다 */
+export const nativeConfirm: ConfirmFn = (message) => Promise.resolve(window.confirm(message));
+
+/**
+ * 버튼 동작을 실행한다. 확인이 필요한 동작은 confirm으로 먼저 묻는다.
+ * 큰 화면은 기본 확인 창을 쓰면 전체 화면이 풀리므로 화면 안의 확인 창을 넘겨준다.
+ */
+export async function runAction(
+  client: RoomClient,
+  action: HostAction,
+  confirm: ConfirmFn = nativeConfirm,
+): Promise<string | null> {
+  if (action.confirm && !(await confirm(action.confirm))) return null;
   const res = await client.command(action.cmd);
   return res.ok ? null : res.message;
 }

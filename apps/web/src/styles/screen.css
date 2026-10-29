@@ -503,6 +503,32 @@
   pointer-events: none;
 }
 
+.pause-cover__restart {
+  display: grid;
+  gap: 0.5em;
+  max-width: 30em;
+  margin: 0 24px;
+  padding: 1.4em 1.8em 1.6em;
+  text-align: center;
+  font-size: 0.16em;
+  color: var(--ink);
+  background: var(--paper);
+  border: 4px solid var(--ink);
+  border-radius: var(--r-lg);
+  box-shadow: 0 8px 0 var(--ink);
+}
+
+.pause-cover__restart .caption {
+  font-size: 2.6em;
+}
+
+.pause-cover__restart p {
+  margin: 0;
+  font-size: 1.3em;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
 /* 리액션 */
 .reactions {
   position: fixed;
@@ -611,4 +637,42 @@
     width: auto;
     margin-top: 1em;
   }
+}
+
+/* 화면 안 확인 창 (기본 확인 창은 전체 화면을 풀어 버려서 직접 그린다) */
+.confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(27 26 58 / 55%);
+  font-size: clamp(16px, 0.9vw + 8px, 28px);
+}
+.confirm__box {
+  display: grid;
+  gap: 1.2em;
+  max-width: 30em;
+  padding: 1.6em;
+  background: var(--paper);
+  color: var(--ink);
+  border: 4px solid var(--ink);
+  border-radius: var(--r-lg);
+  box-shadow: 0 8px 0 var(--ink);
+}
+.confirm__msg {
+  font-size: 1.3em;
+  font-weight: 800;
+  line-height: 1.4;
+}
+.confirm__row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6em;
+}
+.lobby__bots {
+  font-size: 0.6em;
+  font-weight: 700;
+  color: var(--stage-muted);
 }

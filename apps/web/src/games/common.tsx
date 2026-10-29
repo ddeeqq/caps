@@ -186,6 +186,9 @@ export function FinalReport({ report, live = false }: { report: SessionReport; l
         </Caption>
         <p className="report__sub">
           {report.packName}, 최대 {report.peakPlayers}명이 함께했어요
+          {(report.bots ?? 0) > 0
+            ? ` (봇 ${report.bots}명이 같이 놀아서 연결 수에는 봇의 행동도 섞여 있어요)`
+            : ''}
         </p>
         {live && <p className="report__hint">폰에서 마지막 설문에 답해 주세요. 결과가 바로 반영돼요</p>}
       </header>

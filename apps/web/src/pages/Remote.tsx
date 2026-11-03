@@ -184,6 +184,26 @@ export function Remote({ code: initialCode }: { code?: string }) {
         )}
       </section>
       <ScriptCard room={room} env={snap.view} />
+      {room.phase === 'finished' && (room.report?.quotes?.length ?? 0) > 0 && (
+        <section className="remote__quotes" aria-label="한 줄 소감">
+          <h2>한 줄 소감 (큰 화면에 보이는 중)</h2>
+          <p className="muted">부적절한 소감은 숨기면 큰 화면과 리포트에서 빠져요</p>
+          <ul>
+            {room.report!.quotes!.map((q) => (
+              <li key={q}>
+                <span>{q}</span>
+                <button
+                  type="button"
+                  className="btn btn--small btn--quiet"
+                  onClick={() => void client.command({ type: 'hideQuote', text: q })}
+                >
+                  숨기기
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {primary && (
         <button
           type="button"

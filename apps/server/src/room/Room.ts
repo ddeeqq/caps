@@ -104,6 +104,8 @@ export class Room {
   phaseSince: number;
   players = new Map<string, PlayerRec>();
   kickedTokens = new Set<string>();
+  /** 진행자가 숨긴 한 줄 소감 */
+  hiddenQuotes = new Set<string>();
   hostSockets = new Set<string>();
   remoteSockets = new Set<string>();
   teams: TeamInfo[] | null = null;
@@ -423,6 +425,9 @@ export class Room {
       case 'clearBots':
         this.clearBots();
         return null;
+      case 'hideQuote':
+        this.hiddenQuotes.add(cmd.text);
+        return null;
     }
   }
 
@@ -544,7 +549,7 @@ export class Room {
   /** 한 줄 소감: 사람만, 누가 썼는지 알 수 없게 시드로 섞는다 */
   quotes(): string[] {
     const list = [...this.players.values()]
-      .filter((p) => !p.bot && p.survey.comment)
+      .filter((p) => !p.bot && p.survey.comment && !this.hiddenQuotes.has(p.survey.comment))
       .map((p) => p.survey.comment as string);
     return createRng(this.seed ^ 0x2545f491).shuffle(list);
   }
@@ -695,6 +700,7 @@ export class Room {
         bot: p.bot,
       })),
       kickedTokens: [...this.kickedTokens],
+      hiddenQuotes: [...this.hiddenQuotes],
       teams: this.teams,
       game: this.game ? { id: this.game.id, state: this.game.state, summary: this.game.summary } : null,
       summaries: this.summaries,
@@ -729,6 +735,7 @@ export class Room {
     room.index = snap.index;
     room.phaseSince = snap.phaseSince;
     room.kickedTokens = new Set(snap.kickedTokens);
+    room.hiddenQuotes = new Set(snap.hiddenQuotes ?? []);
     room.teams = snap.teams;
     room.summaries = snap.summaries;
     room.pauseAccum = snap.pauseAccum;

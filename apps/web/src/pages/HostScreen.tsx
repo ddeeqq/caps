@@ -336,7 +336,13 @@ export function HostScreen({ code }: { code: string }) {
           <HostView view={env.view} client={client} room={room} />
         )}
         {room.phase === 'result' && env && <HostResult summary={env.summary} nextGame={nextGame} />}
-        {room.phase === 'finished' && room.report && <FinalReport report={room.report} live />}
+        {room.phase === 'finished' && room.report && (
+          <FinalReport
+            report={room.report}
+            live
+            onHideQuote={(text) => void client.command({ type: 'hideQuote', text })}
+          />
+        )}
       </main>
       {room.paused && (
         <div className="pause-cover" aria-live="polite">

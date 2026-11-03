@@ -139,6 +139,8 @@ export function registerSocketHandlers(io: IO, manager: RoomManager, storage: St
       const err = room.command(parsed.data);
       if (err) return reply(errorAck(err));
       if (before !== 'finished' && room.phase === 'finished') manager.scheduleReport(room);
+      // 끝난 뒤 소감을 숨기면 저장된 리포트에서도 빠지게 다시 저장한다
+      else if (parsed.data.type === 'hideQuote' && room.phase === 'finished') manager.scheduleReport(room);
       log.debug(`명령 ${room.code} ${parsed.data.type} → ${room.phase}`);
       reply({ ok: true });
     });

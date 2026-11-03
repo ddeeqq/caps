@@ -12,6 +12,8 @@
   --sun-2: #fff0a3;
   --gum: #ff4f8b;
   --gum-2: #ffd3e2;
+  /* 흰 글자를 올리는 분홍 (대비 4.7:1, WCAG AA). 장식용 분홍은 --gum 그대로 */
+  --gum-deep: #d92b66;
   --soda: #3ec1f3;
   --soda-2: #d2f1fd;
   --mint: #3dd9a0;
@@ -230,7 +232,7 @@ img {
   cursor: not-allowed;
 }
 .btn--primary {
-  background: var(--gum);
+  background: var(--gum-deep);
   color: var(--paper);
 }
 .btn--sun {

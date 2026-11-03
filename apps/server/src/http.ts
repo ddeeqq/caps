@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import {
   DEFAULT_FLOW,
@@ -211,10 +211,11 @@ export function createHttpApp(opts: {
         },
       }),
     );
+    const indexHtml = readFileSync(path.join(webDist, 'index.html'), 'utf8');
     app.use((req, res, next) => {
       if (req.method !== 'GET' || req.path.startsWith('/socket.io')) return next();
       res.setHeader('Cache-Control', 'no-cache');
-      res.sendFile(path.join(webDist, 'index.html'));
+      res.type('html').send(renderIndex(indexHtml, req, manager));
     });
     log.info(`웹 앱 제공: ${webDist}`);
   }
@@ -225,4 +226,35 @@ export function createHttpApp(opts: {
   });
 
   return app;
+}
+
+const escapeHtml = (t: string): string =>
+  t.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+
+/**
+ * index.html의 링크 미리보기 자리(__ORIGIN__, __PATH__, __TITLE__)를 채운다.
+ * 카카오톡 미리보기는 절대 주소의 이미지가 필요하다. 호스트 헤더는 모양을 검사해서 쓴다.
+ * 방 입장 링크(/play/ABCD)는 "방 ABCD에 들어와요"로 보여 준다.
+ */
+export function renderIndex(html: string, req: Request, manager: RoomManager): string {
+  const fwd = String(req.headers['x-forwarded-proto'] ?? '')
+    .split(',')[0]
+    ?.trim();
+  const proto = fwd === 'https' || fwd === 'http' ? fwd : req.protocol;
+  const host = String(req.headers.host ?? '');
+  const origin = /^[\w.-]+(:\d+)?$/.test(host) ? `${proto}://${host}` : '';
+  let title = '말문 — 말문이 트이는 20분';
+  const m = /^\/play\/([a-z]{4})\/?$/i.exec(req.path);
+  if (m) {
+    const room = manager.get(m[1]!);
+    title =
+      room && room.phase !== 'finished'
+        ? `말문 방 ${room.code}에 들어와요 (${room.pack.name})`
+        : '말문 방에 들어와요';
+  }
+  const pathOnly = /^[\w\-/.]*$/.test(req.path) ? req.path : '/';
+  return html
+    .replaceAll('__ORIGIN__', escapeHtml(origin))
+    .replaceAll('__PATH__', escapeHtml(pathOnly))
+    .replaceAll('__TITLE__', escapeHtml(title));
 }

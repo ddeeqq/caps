@@ -93,6 +93,8 @@ export const hostCommandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('setFlow'), flow: z.array(gameIdSchema).min(1).max(12) }),
   z.object({ type: z.literal('addBots'), count: z.number().int().min(1).max(30) }),
   z.object({ type: z.literal('clearBots') }),
+  /** 큰 화면·리포트에서 한 줄 소감 하나를 숨긴다 (진행자 판단) */
+  z.object({ type: z.literal('hideQuote'), text: z.string().max(200) }),
 ]);
 export type HostCommand = z.infer<typeof hostCommandSchema>;
 

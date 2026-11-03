@@ -517,6 +517,31 @@ a:has(> .wordmark) {
   font-size: var(--t-3xl);
   line-height: 1.15;
 }
+.remote__quotes {
+  display: grid;
+  gap: 6px;
+}
+.remote__quotes h2 {
+  font-size: var(--t-md);
+}
+.remote__quotes ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+.remote__quotes li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-md);
+  background: var(--sun-2);
+  font-weight: 700;
+}
 .script {
   display: grid;
   gap: 8px;

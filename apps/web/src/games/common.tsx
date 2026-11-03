@@ -173,7 +173,16 @@ function Bars({ values, labels }: { values: number[]; labels: readonly string[] 
 }
 
 /** 세션 마지막 화면이자 /report 페이지: 커뮤니케이션 지표 */
-export function FinalReport({ report, live = false }: { report: SessionReport; live?: boolean }) {
+export function FinalReport({
+  report,
+  live = false,
+  onHideQuote,
+}: {
+  report: SessionReport;
+  live?: boolean;
+  /** 진행자 화면에서만: 부적절한 소감을 숨긴다 */
+  onHideQuote?: (text: string) => void;
+}) {
   const s = report.survey;
   const delta =
     s.lobby.avg !== null && s.end.avg !== null ? Math.round((s.end.avg - s.lobby.avg) * 10) / 10 : null;
@@ -236,7 +245,20 @@ export function FinalReport({ report, live = false }: { report: SessionReport; l
             <ul className="report__quotes">
               {/* 큰 화면에서는 빈 칸 하나에 들어가게 세 개만, 리포트 페이지에서는 열두 개까지 */}
               {report.quotes!.slice(0, live ? 3 : 12).map((q, i) => (
-                <li key={`${i}-${q}`}>{q}</li>
+                <li key={`${i}-${q}`}>
+                  <span className="report__quote">{q}</span>
+                  {onHideQuote && (
+                    <button
+                      type="button"
+                      className="report__quote-hide"
+                      aria-label={`소감 숨기기: ${q}`}
+                      title="이 소감 숨기기"
+                      onClick={() => onHideQuote(q)}
+                    >
+                      ×
+                    </button>
+                  )}
+                </li>
               ))}
             </ul>
           </article>

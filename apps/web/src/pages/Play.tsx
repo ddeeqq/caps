@@ -161,7 +161,7 @@ function PlayRoom({ code }: { code: string }) {
           </label>
           {error && <p className="error-text">{error.message}</p>}
           <button className="btn btn--primary btn--block">입장하기</button>
-          <p className="muted">게임 중에 소리가 나요. 무음 모드를 꺼 주세요</p>
+          <p className="muted">게임 중에 소리가 나요. 폰 소리를 키워 주세요</p>
         </form>
       </main>
     );

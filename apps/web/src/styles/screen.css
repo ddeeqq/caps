@@ -409,12 +409,34 @@
   border-radius: var(--r-md);
   background: var(--sun-2);
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
 }
-.report__quotes li::before {
+.report__quote::before {
   content: '“';
 }
-.report__quotes li::after {
+.report__quote::after {
   content: '”';
+}
+.report__quote-hide {
+  display: grid;
+  place-items: center;
+  width: 1.6em;
+  height: 1.6em;
+  padding: 0;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.55;
+}
+.report__quote-hide:hover,
+.report__quote-hide:focus-visible {
+  opacity: 1;
 }
 .report__games {
   margin: 0;

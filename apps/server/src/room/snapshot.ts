@@ -43,6 +43,8 @@ export interface RoomSnapshot {
     bot: boolean;
   }>;
   kickedTokens: string[];
+  /** 진행자가 숨긴 한 줄 소감 (예전 저장본에는 없다) */
+  hiddenQuotes?: string[];
   teams: TeamInfo[] | null;
   game: { id: GameId; state: unknown; summary: GameSummary | null } | null;
   summaries: GameSummary[];

@@ -1,0 +1,15 @@
+{
+  "name": "말문 — 말문이 트이는 20분",
+  "short_name": "말문",
+  "description": "QR 하나로 들어와서, 폰을 들고 같이 노는 아이스브레이킹",
+  "lang": "ko",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#FFD93B",
+  "theme_color": "#FFD93B",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

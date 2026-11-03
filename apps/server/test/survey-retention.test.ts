@@ -91,3 +91,21 @@ describe('PostgreSQL 연결 주소', () => {
     expect(needsSsl('postgresql://u:p@dpg-abc-a.singapore-postgres.render.com/db', '0')).toBe(false);
   });
 });
+
+describe('소감 숨기기', () => {
+  it('진행자가 숨긴 소감은 리포트에서 빠지고, 저장본에도 남는다', () => {
+    const room = new Room({
+      code: 'HIDE',
+      pack: resolvePack({ preset: 'work' }),
+      flow: ['nunchi'],
+      settings: DEFAULT_SETTINGS,
+    });
+    const [a, b] = ['가', '나'].map((n) => room.addPlayer(n));
+    room.survey(a!, { phase: 'end', comment: '좋았어요' });
+    room.survey(b!, { phase: 'end', comment: '그냥 그랬어요' });
+    expect(room.command({ type: 'hideQuote', text: '그냥 그랬어요' })).toBeNull();
+    expect(room.report().quotes).toEqual(['좋았어요']);
+    const restored = Room.fromSnapshot(JSON.parse(JSON.stringify(room.toSnapshot())));
+    expect(restored.report().quotes).toEqual(['좋았어요']);
+  });
+});

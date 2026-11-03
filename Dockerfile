@@ -36,7 +36,8 @@ COPY --from=build /out/server ./server
 COPY --from=build /out/web ./web
 RUN mkdir -p /data && chown node:node /data
 USER node
-VOLUME ["/data"]
+# VOLUME 지시어는 쓰지 않는다: Railway는 이를 거부하고, 저장 공간은 호스팅의 볼륨을 /data에 붙인다
+# (docker run -v malmun-data:/data 처럼)
 EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://127.0.0.1:${PORT}/api/health || exit 1
 CMD ["node", "server/dist/index.js"]

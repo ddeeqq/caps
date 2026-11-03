@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Pack, PackInput, SessionReport } from '@caps/shared';
 import { isRoomSnapshot, type RoomSnapshot } from '../room/snapshot';
@@ -104,6 +104,24 @@ export class JsonStorage implements Storage {
     } catch {
       return null;
     }
+  }
+
+  async pruneSessions(before: number): Promise<number> {
+    const dir = path.join(this.dir, 'sessions');
+    let removed = 0;
+    for (const name of await readdir(dir).catch(() => [] as string[])) {
+      if (!name.endsWith('.json')) continue;
+      const file = path.join(dir, name);
+      try {
+        if ((await stat(file)).mtimeMs < before) {
+          await unlink(file);
+          removed += 1;
+        }
+      } catch {
+        /* 다른 쪽에서 이미 지웠으면 넘어간다 */
+      }
+    }
+    return removed;
   }
 
   async saveRoomSnapshots(snapshots: RoomSnapshot[]): Promise<void> {

@@ -27,6 +27,8 @@ export function createHttpApp(opts: {
   log: Logger;
   webDist?: string | null;
   startedAt?: number;
+  /** 세션 리포트 보관 일수 (0 = 무기한). 리포트 화면에 안내한다 */
+  retentionDays?: number;
 }) {
   const { storage, manager, log } = opts;
   const startedAt = opts.startedAt ?? Date.now();
@@ -180,8 +182,11 @@ export function createHttpApp(opts: {
   app.get('/api/sessions/:id', async (req, res, next) => {
     try {
       const report = await storage.getSession(String(req.params.id));
-      if (!report) return res.status(404).json({ error: 'NOT_FOUND', message: '세션 기록이 없어요' });
-      res.json({ report });
+      if (!report)
+        return res
+          .status(404)
+          .json({ error: 'NOT_FOUND', message: '기록이 없거나 보관 기간이 지나 지워졌어요' });
+      res.json({ report, retentionDays: opts.retentionDays ?? 0 });
     } catch (err) {
       next(err);
     }

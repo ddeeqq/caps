@@ -1,4 +1,4 @@
-import { GAME_META } from '@caps/shared';
+import { GAME_META, hostScript, type RoomState, type ViewEnvelope } from '@caps/shared';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Spinner, Wordmark } from '../components/ui';
 import { useClientSnapshot, useRoomClient } from '../lib/roomClient';
@@ -13,6 +13,55 @@ const PHASE_TEXT = {
   result: '결과',
   finished: '끝',
 } as const;
+
+/**
+ * 진행 멘트 카드: 지금 단계에서 소리 내어 읽을 말과 진행자만 보는 팁.
+ * 처음 진행하는 사람도 리모컨만 보고 진행할 수 있게 한다. 접어 두면 기억한다.
+ */
+function ScriptCard({ room, env }: { room: RoomState; env: ViewEnvelope | null }) {
+  const [hidden, setHidden] = useState(() => local.get(keys.scriptHidden) === '1');
+  const stage =
+    env && room.phase === 'playing' ? ((env.view as { stage?: string } | null)?.stage ?? null) : null;
+  const script = hostScript({
+    phase: room.phase,
+    gameId: room.gameId,
+    stage,
+    last: room.index + 1 >= room.flow.length,
+    paused: room.paused,
+  });
+  const toggle = () => {
+    const next = !hidden;
+    setHidden(next);
+    local.set(keys.scriptHidden, next ? '1' : '0');
+  };
+  if (script.say.length === 0 && !script.tip) return null;
+  return (
+    <section className="script" aria-label="진행 멘트">
+      <header className="script__head">
+        <h2>이렇게 말해 보세요</h2>
+        <button
+          type="button"
+          className="btn btn--small btn--quiet"
+          onClick={toggle}
+          aria-expanded={!hidden}
+          aria-controls="script-body"
+        >
+          {hidden ? '펼치기' : '접기'}
+        </button>
+      </header>
+      {!hidden && (
+        <div id="script-body" className="script__body">
+          {script.say.map((line) => (
+            <p key={line} className="script__say">
+              {line}
+            </p>
+          ))}
+          {script.tip && <p className="script__tip">{script.tip}</p>}
+        </div>
+      )}
+    </section>
+  );
+}
 
 /** 진행자가 폰으로 큰 화면을 조종하는 리모컨 */
 export function Remote({ code: initialCode }: { code?: string }) {
@@ -134,6 +183,7 @@ export function Remote({ code: initialCode }: { code?: string }) {
           </p>
         )}
       </section>
+      <ScriptCard room={room} env={snap.view} />
       {primary && (
         <button
           type="button"

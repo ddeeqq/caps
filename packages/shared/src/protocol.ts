@@ -50,6 +50,8 @@ export interface SessionReport {
   flow: GameId[];
   games: GameSummary[];
   survey: SurveyStats;
+  /** 익명 한 줄 소감 (순서는 섞여 있다). 예전 기록에는 없다 */
+  quotes?: string[];
   metrics: {
     faceToFace: number;
     links: number;

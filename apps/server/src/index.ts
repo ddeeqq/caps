@@ -21,6 +21,7 @@ async function main() {
     webDist,
     log,
     allowCors: process.env.NODE_ENV !== 'production',
+    sessionRetentionDays: Number(process.env.SESSION_RETENTION_DAYS ?? 30),
   });
   await server.restoreRooms();
   const actualPort = await server.listen(port, host);

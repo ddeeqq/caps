@@ -26,6 +26,8 @@ export function createCapsServer(opts: {
   allowCors?: boolean;
   /** 진행 중인 방을 주기적으로 저장 (기본 켬) */
   snapshots?: boolean;
+  /** 세션 리포트 보관 일수 (0 = 지우지 않음). 기본 0, 운영 실행(index.ts)은 30 */
+  sessionRetentionDays?: number;
 }): CapsServer {
   const log = opts.log ?? createLogger();
   const httpServer = createHttpServer();
@@ -38,10 +40,19 @@ export function createCapsServer(opts: {
     ...(opts.allowCors ? { cors: { origin: true } } : {}),
   });
   const manager = new RoomManager(io, opts.storage, log);
-  const app = createHttpApp({ storage: opts.storage, manager, log, webDist: opts.webDist ?? null });
+  const app = createHttpApp({
+    storage: opts.storage,
+    manager,
+    log,
+    webDist: opts.webDist ?? null,
+    retentionDays: opts.sessionRetentionDays ?? 0,
+  });
   httpServer.on('request', app);
   registerSocketHandlers(io, manager, opts.storage, log);
-  manager.start(opts.tickMs ?? 50, { snapshots: opts.snapshots });
+  manager.start(opts.tickMs ?? 50, {
+    snapshots: opts.snapshots,
+    retentionDays: opts.sessionRetentionDays ?? 0,
+  });
 
   return {
     httpServer,

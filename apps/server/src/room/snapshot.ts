@@ -39,7 +39,7 @@ export interface RoomSnapshot {
     nickname: string;
     color: string;
     joinedAt: number;
-    survey: { lobby?: number; endComfort?: number; newPeople?: number };
+    survey: { lobby?: number; endComfort?: number; newPeople?: number; comment?: string };
     bot: boolean;
   }>;
   kickedTokens: string[];

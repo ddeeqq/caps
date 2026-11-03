@@ -47,7 +47,7 @@ export interface PlayerRec {
   connected: boolean;
   joinedAt: number;
   disconnectedAt: number | null;
-  survey: { lobby?: number; endComfort?: number; newPeople?: number };
+  survey: { lobby?: number; endComfort?: number; newPeople?: number; comment?: string };
   inputLimiter: RateLimiter;
   reactLimiter: RateLimiter;
   /** 서버 안에서 노는 가상 참가자 (소켓 없음) */
@@ -340,6 +340,11 @@ export class Room {
     if (answer.phase === 'end') {
       if (answer.comfort) rec.survey.endComfort = answer.comfort;
       if (answer.newPeople !== undefined) rec.survey.newPeople = answer.newPeople;
+      if (answer.comment !== undefined) {
+        const c = cleanText(answer.comment, LIMITS.comment);
+        if (!c) delete rec.survey.comment;
+        else if (!containsProfanity(c)) rec.survey.comment = c;
+      }
     }
     this.touch();
   }
@@ -536,6 +541,14 @@ export class Room {
     };
   }
 
+  /** 한 줄 소감: 사람만, 누가 썼는지 알 수 없게 시드로 섞는다 */
+  quotes(): string[] {
+    const list = [...this.players.values()]
+      .filter((p) => !p.bot && p.survey.comment)
+      .map((p) => p.survey.comment as string);
+    return createRng(this.seed ^ 0x2545f491).shuffle(list);
+  }
+
   report(): SessionReport {
     const soundmate = this.summaries.find((s) => s.gameId === 'soundmate');
     const vault = this.summaries.find((s) => s.gameId === 'vault');
@@ -555,6 +568,7 @@ export class Room {
       flow: this.flow,
       games: this.summaries,
       survey: this.surveyStats(),
+      quotes: this.quotes(),
       metrics: {
         faceToFace: soundmate?.metrics.faceToFace ?? 0,
         links: soundmate?.metrics.links ?? 0,

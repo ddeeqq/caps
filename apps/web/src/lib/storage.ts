@@ -29,4 +29,5 @@ export const keys = {
   packEdit: (code: string) => `malmun:pack:${code}`,
   nickname: 'malmun:nickname',
   lastPreset: 'malmun:preset',
+  scriptHidden: 'malmun:script-hidden',
 };

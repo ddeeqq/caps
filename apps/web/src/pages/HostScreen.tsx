@@ -311,7 +311,7 @@ export function HostScreen({ code }: { code: string }) {
   const nextGame = room.flow[room.index + 1] ?? null;
 
   return (
-    <div className="screen" data-tone={tone}>
+    <div className="screen" data-tone={tone} data-phase={room.phase}>
       <header className="screen__bar">
         <Wordmark size="sm" />
         <span className="screen__code">

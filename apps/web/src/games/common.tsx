@@ -230,6 +230,17 @@ export function FinalReport({ report, live = false }: { report: SessionReport; l
             <p className="muted">팀이 정보를 합쳐 연 비율</p>
           </article>
         )}
+        {(report.quotes?.length ?? 0) > 0 && (
+          <article className={`report__card ${live ? '' : 'report__card--wide'}`}>
+            <h2>한 줄 소감 {report.quotes!.length}개</h2>
+            <ul className="report__quotes">
+              {/* 큰 화면에서는 빈 칸 하나에 들어가게 세 개만, 리포트 페이지에서는 열두 개까지 */}
+              {report.quotes!.slice(0, live ? 3 : 12).map((q, i) => (
+                <li key={`${i}-${q}`}>{q}</li>
+              ))}
+            </ul>
+          </article>
+        )}
       </div>
       {report.games.length > 0 && (
         <ol className="report__games">

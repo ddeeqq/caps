@@ -217,10 +217,15 @@ a:has(> .wordmark) {
   padding: 14px 0 calc(14px + env(safe-area-inset-bottom));
   background: linear-gradient(to top, var(--paper) 75%, transparent);
 }
-.presets {
+.presets,
+.starters {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 12px;
+}
+/* 템플릿 4개는 넓은 화면에서 한 줄, 폰에서는 두 줄 */
+.starters {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 .preset {
   display: grid;
@@ -509,6 +514,45 @@ a:has(> .wordmark) {
 .remote__now h1 {
   font-size: var(--t-3xl);
   line-height: 1.15;
+}
+.script {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 3px solid var(--ink);
+  border-radius: var(--r-lg);
+  background: var(--sun-2);
+}
+.script__body {
+  display: grid;
+  gap: 8px;
+}
+.script__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.script__head h2 {
+  font-size: var(--t-md);
+}
+.script__say {
+  font-size: var(--t-lg);
+  font-weight: 750;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+.script__tip {
+  padding-top: 8px;
+  border-top: 2px solid var(--line);
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+  font-weight: 650;
+}
+.script__tip::before {
+  content: '팁 ';
+  font-weight: 850;
+  color: var(--ink);
 }
 .remote__notice {
   margin-top: 8px;

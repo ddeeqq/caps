@@ -27,6 +27,7 @@ export class RoomManager {
   private readonly reportDue = new Map<string, number>();
   private tickTimer: NodeJS.Timeout | null = null;
   private cleanupTimer: NodeJS.Timeout | null = null;
+  private pruneTimer: NodeJS.Timeout | null = null;
   private snapshotTimer: NodeJS.Timeout | null = null;
   private snapshotRun: Promise<void> | null = null;
   /** 마지막으로 쓴 저장본 (저장 시각 제외). 같으면 다시 쓰지 않는다 */
@@ -40,7 +41,17 @@ export class RoomManager {
     private readonly log: Logger,
   ) {}
 
-  start(tickMs = 50, opts: { snapshots?: boolean } = {}): void {
+  /**
+   * opts.retentionDays: 세션 리포트를 며칠 보관할지 (0이면 지우지 않음).
+   * 리포트에는 닉네임과 익명 설문만 있지만, 보관 기한을 두는 것이 개인정보 원칙에 맞다.
+   */
+  start(tickMs = 50, opts: { snapshots?: boolean; retentionDays?: number } = {}): void {
+    const days = opts.retentionDays ?? 0;
+    if (days > 0) {
+      const prune = () => void this.pruneSessions(days);
+      prune();
+      this.pruneTimer = setInterval(prune, 6 * 60 * 60 * 1000);
+    }
     this.tickTimer = setInterval(() => this.tickAll(), tickMs);
     this.cleanupTimer = setInterval(() => void this.cleanup(), 60_000);
     if (opts.snapshots !== false) {
@@ -51,6 +62,7 @@ export class RoomManager {
   async stop(): Promise<void> {
     if (this.tickTimer) clearInterval(this.tickTimer);
     if (this.cleanupTimer) clearInterval(this.cleanupTimer);
+    if (this.pruneTimer) clearInterval(this.pruneTimer);
     const snapshots = this.snapshotTimer !== null;
     if (this.snapshotTimer) clearInterval(this.snapshotTimer);
     this.snapshotTimer = null;
@@ -115,6 +127,17 @@ export class RoomManager {
     }
     if (restored) this.log.info(`방 ${restored}개 복구 (일시정지 상태로 이어서 진행)`);
     return restored;
+  }
+
+  async pruneSessions(days: number): Promise<number> {
+    try {
+      const removed = await this.storage.pruneSessions(Date.now() - days * 24 * 60 * 60 * 1000);
+      if (removed) this.log.info(`${days}일 지난 세션 리포트 ${removed}개 삭제`);
+      return removed;
+    } catch (err) {
+      this.log.error('오래된 리포트 정리 실패', err);
+      return 0;
+    }
   }
 
   createRoom(opts: Omit<RoomOptions, 'code'>): Room {

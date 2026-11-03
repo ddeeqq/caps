@@ -107,5 +107,7 @@ export const surveySchema = z.object({
   phase: z.enum(['lobby', 'end']),
   comfort: z.number().int().min(1).max(5).optional(),
   newPeople: z.number().int().min(0).max(3).optional(),
+  /** 한 줄 소감 (선택). 서버가 다듬고 금칙어를 거른다 */
+  comment: z.string().max(200).optional(),
 });
 export type SurveyAnswer = z.infer<typeof surveySchema>;

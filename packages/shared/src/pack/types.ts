@@ -50,6 +50,8 @@ export const LIMITS = {
   penalties: 20,
   teamNames: 20,
   nickname: 12,
+  /** 끝 설문의 한 줄 소감 */
+  comment: 60,
 } as const;
 
 // 입력 검증 스키마(zod)와 PackInput 타입은 ../schemas.ts 에 있다 (웹 번들에서 zod를 빼기 위해)

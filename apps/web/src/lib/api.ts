@@ -77,5 +77,6 @@ export const api = {
     }),
   previewPack: (input: Omit<PackInput, 'name'> & { name?: string }) =>
     request<PackPreview>('/api/packs/preview', { method: 'POST', body: JSON.stringify(input) }),
-  session: (id: string) => request<{ report: SessionReport }>(`/api/sessions/${encodeURIComponent(id)}`),
+  session: (id: string) =>
+    request<{ report: SessionReport; retentionDays?: number }>(`/api/sessions/${encodeURIComponent(id)}`),
 };

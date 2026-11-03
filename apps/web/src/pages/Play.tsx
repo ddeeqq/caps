@@ -285,6 +285,7 @@ function PlayerLobby({ client }: { client: RoomClient }) {
 function EndSurvey({ client, met }: { client: RoomClient; met: MetPerson[] }) {
   const [comfort, setComfort] = useState<number | null>(null);
   const [people, setPeople] = useState<number | null>(null);
+  const [comment, setComment] = useState('');
   const [sent, setSent] = useState(false);
   if (sent) {
     // 설문에 답한 뒤에 보여 준다 (먼저 보이면 "처음 말해본 사람" 답이 흔들린다)
@@ -329,6 +330,18 @@ function EndSurvey({ client, met }: { client: RoomClient; met: MetPerson[] }) {
         <h2>지금 분위기는 어때요?</h2>
         <ComfortScale value={comfort} onChange={setComfort} />
       </div>
+      <label className="panel stack p-comment">
+        <span className="p-comment__label">
+          한 줄 소감 <span className="muted">(선택, 이름 없이 큰 화면에 떠요)</span>
+        </span>
+        <input
+          className="input"
+          maxLength={LIMITS.comment}
+          value={comment}
+          placeholder="예: 옆자리 사람 이름을 처음 알았어요"
+          onChange={(e) => setComment(e.target.value)}
+        />
+      </label>
       <button
         type="button"
         className="btn btn--primary btn--block"
@@ -338,6 +351,7 @@ function EndSurvey({ client, met }: { client: RoomClient; met: MetPerson[] }) {
             phase: 'end',
             comfort: comfort ?? undefined,
             newPeople: people ?? undefined,
+            ...(comment.trim() ? { comment: comment.trim() } : {}),
           });
           setSent(true);
         }}

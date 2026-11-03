@@ -393,6 +393,27 @@
   font-size: 2.6em;
   line-height: 1.1;
 }
+.report__quotes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.report__quotes li {
+  padding: 0.4em 0.9em;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-md);
+  background: var(--sun-2);
+  font-weight: 700;
+}
+.report__quotes li::before {
+  content: '“';
+}
+.report__quotes li::after {
+  content: '”';
+}
 .report__games {
   margin: 0;
   padding-left: 1.4em;
@@ -620,8 +641,64 @@
   opacity: 0.6;
 }
 
-.screen--report .screen__stage {
+.screen--report .screen__stage,
+.screen[data-phase='finished'] .screen__stage {
   overflow: auto;
+}
+
+.report-actions {
+  display: grid;
+  gap: 0.5em;
+  max-width: 70em;
+  width: 100%;
+  justify-self: center;
+  margin-bottom: 1.2em;
+  font-size: 0.9em;
+}
+.report-actions__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6em;
+}
+.report-actions__note {
+  font-weight: 650;
+  color: var(--ink-2);
+}
+
+/* PDF로 저장(인쇄): 흰 바탕, 버튼·머리 빼고, 카드가 쪽 사이에서 잘리지 않게 */
+@media print {
+  @page {
+    margin: 14mm;
+  }
+  body,
+  .screen,
+  .screen--report {
+    background: #fff !important;
+    color: #000;
+    min-height: 0;
+  }
+  .screen__bar,
+  .report-actions,
+  .reactions,
+  .dock {
+    display: none !important;
+  }
+  .screen__stage {
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+  .report__card,
+  .report__games li,
+  .report__quotes li {
+    break-inside: avoid;
+    box-shadow: none !important;
+  }
+  .report {
+    font-size: 12pt;
+    /* 막대·칩 배경색은 숫자를 읽는 데 필요하다: 인쇄에서도 그대로 */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }
 
 @media (max-width: 900px) {

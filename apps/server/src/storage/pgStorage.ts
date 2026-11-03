@@ -135,6 +135,14 @@ export class PgStorage implements Storage {
     return row ? json(row.report) : null;
   }
 
+  async pruneSessions(before: number): Promise<number> {
+    const { rows } = await this.db.query<{ id: string }>(
+      `DELETE FROM sessions WHERE updated_at < $1 RETURNING id`,
+      [new Date(before).toISOString()],
+    );
+    return rows.length;
+  }
+
   async saveRoomSnapshots(snapshots: RoomSnapshot[]): Promise<void> {
     const now = new Date().toISOString();
     const body = JSON.stringify(snapshots);
@@ -165,8 +173,28 @@ export class PgStorage implements Storage {
   }
 }
 
+/**
+ * 호스팅 DB의 외부 주소(예: Render의 *.render.com)는 TLS가 필요하고, 같은 네트워크 안의 내부 주소는 필요 없다.
+ * 주소만 보고 고른다. PGSSL=1/0으로 직접 정할 수도 있다.
+ */
+export function needsSsl(url: string, env = process.env.PGSSL): boolean {
+  if (env === '1' || env === 'true') return true;
+  if (env === '0' || env === 'false') return false;
+  if (/sslmode=(require|verify-ca|verify-full)/.test(url)) return true;
+  try {
+    const host = new URL(url).hostname;
+    return /\.(render\.com|neon\.tech|supabase\.co|railway\.app|rlwy\.net)$/.test(host);
+  } catch {
+    return false;
+  }
+}
+
 export async function createPgStorage(url: string): Promise<PgStorage> {
   const { default: pg } = await import('pg');
-  const pool = new pg.Pool({ connectionString: url, max: 5 });
+  const pool = new pg.Pool({
+    connectionString: url,
+    max: 5,
+    ...(needsSsl(url) ? { ssl: { rejectUnauthorized: false } } : {}),
+  });
   return new PgStorage(pool as unknown as Queryable);
 }

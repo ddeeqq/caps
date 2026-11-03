@@ -3,8 +3,10 @@ import {
   DEFAULT_SETTINGS,
   GAME_IDS,
   GAME_META,
+  PACK_STARTERS,
   PRESETS,
   type GameId,
+  type PackStarter,
   type Pack,
   type PresetId,
   type RoomSettings,
@@ -48,6 +50,7 @@ export function HostNew() {
   const [names, setNames] = useState<string[]>([]);
   const [keywords, setKeywords] = useState<string[]>([]);
   const [finale, setFinale] = useState('');
+  const [starter, setStarter] = useState<PackStarter | null>(null);
   const [flow, setFlow] = useState<GameId[]>([...DEFAULT_FLOW]);
   const [settings, setSettings] = useState<RoomSettings>({ ...DEFAULT_SETTINGS });
   const [showSettings, setShowSettings] = useState(false);
@@ -104,7 +107,17 @@ export function HostNew() {
       settings,
       ...(mode === 'code'
         ? { packCode }
-        : { inlinePack: { names, keywords, finaleText: finale }, packName: `${PRESETS[preset].label} 모임` }),
+        : {
+            inlinePack: {
+              names,
+              keywords,
+              finaleText: finale,
+              ...(starter
+                ? { balanceQuestions: starter.content.balanceQuestions, penalties: starter.content.penalties }
+                : {}),
+            },
+            packName: starter?.packName ?? `${PRESETS[preset].label} 모임`,
+          }),
     });
     setBusy(false);
     if (!res.ok) {
@@ -113,6 +126,20 @@ export function HostNew() {
     }
     local.set(keys.host(res.code), res.hostToken);
     navigate(`/host/${res.code}`);
+  };
+
+  /** 템플릿을 고르면 모임 성격, 키워드, 마지막 문구, 순서를 한 번에 채운다. 다시 누르면 해제 */
+  const pickStarter = (st: PackStarter) => {
+    if (starter?.id === st.id) {
+      setStarter(null);
+      return;
+    }
+    setStarter(st);
+    setMode('quick');
+    setPreset(st.preset);
+    setKeywords([...st.content.keywords]);
+    setFinale(st.content.finaleText);
+    setFlow([...st.flow]);
   };
 
   const presetDef = PRESETS[preset];
@@ -131,6 +158,34 @@ export function HostNew() {
         </Link>
         <h1>방 만들기</h1>
       </header>
+
+      <section className="setup__section" aria-labelledby="starter-title">
+        <h2 id="starter-title">템플릿으로 빠르게 시작</h2>
+        <p className="muted">
+          고르면 아래 모임 성격, 키워드, 질문, 순서가 채워져요. 그대로 써도 되고 고쳐도 돼요
+        </p>
+        {/* 다시 누르면 해제되므로 라디오가 아니라 켜고 끄는 버튼 묶음이다 */}
+        <div className="starters" role="group" aria-labelledby="starter-title">
+          {PACK_STARTERS.map((st) => (
+            <button
+              key={st.id}
+              type="button"
+              aria-pressed={starter?.id === st.id}
+              className={`preset ${starter?.id === st.id ? 'is-on' : ''}`}
+              onClick={() => pickStarter(st)}
+            >
+              <strong>{st.label}</strong>
+              <span>{st.description}</span>
+            </button>
+          ))}
+        </div>
+        {starter && (
+          <p className="pack-found">
+            <strong>{starter.label}</strong> 템플릿: 질문 {starter.content.balanceQuestions.length}개, 키워드{' '}
+            {starter.content.keywords.length}개, 게임 {starter.flow.length}개
+          </p>
+        )}
+      </section>
 
       <section className="setup__section" aria-labelledby="preset-title">
         <h2 id="preset-title">어떤 모임인가요?</h2>

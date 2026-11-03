@@ -1,12 +1,13 @@
 import { GAME_META, LIMITS, type MetPerson } from '@caps/shared';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Caption, ComfortScale, NewPeopleScale, ReactionBar, Spinner, Wordmark } from '../components/ui';
+import { InAppNotice } from '../components/InAppNotice';
 import { PlayerIntro, PlayerResult } from '../games/common';
 import { PLAYER_VIEWS } from '../games';
 import { api } from '../lib/api';
 import { useClientSnapshot, useRoomClient, type RoomClient } from '../lib/roomClient';
 import { Link, navigate } from '../lib/router';
-import { unlockAudio } from '../lib/sound';
+import { onFirstGesture, unlockAudio } from '../lib/sound';
 import { keys, local } from '../lib/storage';
 
 export function Play({ code }: { code?: string }) {
@@ -99,9 +100,7 @@ function PlayRoom({ code }: { code: string }) {
 
   // 첫 탭에 오디오를 풀어 둔다 (브라우저 정책)
   useEffect(() => {
-    const unlock = () => void unlockAudio();
-    window.addEventListener('pointerdown', unlock, { once: true });
-    return () => window.removeEventListener('pointerdown', unlock);
+    return onFirstGesture(() => void unlockAudio());
   }, []);
 
   if (snap.kicked) {
@@ -135,6 +134,7 @@ function PlayRoom({ code }: { code: string }) {
           <Wordmark size="sm" />
           <span className="join-page__code">방 {code}</span>
         </header>
+        <InAppNotice />
         <form
           className="stack panel"
           onSubmit={(e) => {
@@ -190,6 +190,7 @@ function PlayerShell({ client }: { client: RoomClient }) {
   return (
     <div className={`phone ${fullBleed ? 'phone--bleed' : ''}`} data-phase={room.phase}>
       {!snap.connected && <div className="banner">연결이 끊겼어요. 다시 연결하는 중…</div>}
+      {room.phase === 'lobby' && <InAppNotice />}
       {room.paused && room.phase !== 'finished' && (
         <div className="banner banner--calm">
           {room.pauseReason === 'restart'
@@ -338,7 +339,7 @@ function EndSurvey({ client, met }: { client: RoomClient; met: MetPerson[] }) {
           className="input"
           maxLength={LIMITS.comment}
           value={comment}
-          placeholder="예: 옆자리 사람 이름을 처음 알았어요"
+          placeholder="예: 옆자리 이름을 알게 됐어요"
           onChange={(e) => setComment(e.target.value)}
         />
       </label>

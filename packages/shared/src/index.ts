@@ -7,6 +7,7 @@ export * from './util/rng';
 export * from './util/teams';
 export * from './util/unionFind';
 export * from './util/nickname';
+export * from './util/inApp';
 export * from './pack/types';
 export * from './pack/presets';
 export * from './pack/josa';

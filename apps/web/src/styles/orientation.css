@@ -97,6 +97,7 @@
   .nunchi-player > .big-tap {
     grid-column: 2;
     grid-row: 1 / span 2;
+    width: min(46vw, calc(100vh - 96px));
     width: min(46vw, calc(100dvh - 96px));
   }
   .nunchi-player__round {
@@ -119,6 +120,7 @@
   .sm-player > .sound-btn {
     grid-column: 1;
     grid-row: 1 / span 6;
+    width: min(40vw, calc(100vh - 110px));
     width: min(40vw, calc(100dvh - 110px));
   }
   .sm-player {
@@ -206,6 +208,7 @@
     gap: 8px;
   }
   .mino-player__choices .choice {
+    min-height: min(120px, 30vh);
     min-height: min(120px, 30dvh);
     padding-block: 12px;
   }
@@ -225,6 +228,7 @@
   .race-player__pads .pad {
     grid-row: 1 / span 6;
     align-self: stretch;
+    min-height: calc(100vh - 120px);
     min-height: calc(100dvh - 120px);
   }
   .race-player__pads .pad:first-child {
@@ -255,6 +259,7 @@
 
   /* 아래에서 올라오는 시트(내 QR, 스캐너)는 높이가 모자라니 화면 거의 전체를 쓴다 */
   .sheet__body {
+    max-height: 100vh;
     max-height: 100dvh;
     padding-top: 12px;
     gap: 8px;

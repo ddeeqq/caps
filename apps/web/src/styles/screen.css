@@ -6,6 +6,7 @@
   --stage-fg: var(--ink);
   --stage-muted: var(--ink-2);
   position: relative;
+  min-height: 100vh;
   min-height: 100dvh;
   display: grid;
   grid-template-rows: auto 1fr;
@@ -121,6 +122,7 @@
   border-width: 3px;
 }
 .qr--sheet {
+  width: min(78vw, 320px, 52vh);
   width: min(78vw, 320px, 52dvh);
   margin: 0 auto;
 }

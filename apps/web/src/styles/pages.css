@@ -28,6 +28,7 @@ a:has(> .wordmark) {
 
 /* ── 가운데 정렬 페이지 (오류, 로딩) ─────────── */
 .center-page {
+  min-height: 100vh;
   min-height: 100dvh;
   display: grid;
   place-content: center;
@@ -461,6 +462,7 @@ a:has(> .wordmark) {
 
 /* ── 폰용 단독 페이지 (참가 코드, 리모컨, 동기화) ── */
 .phone-page {
+  min-height: 100vh;
   min-height: 100dvh;
   max-width: 520px;
   margin: 0 auto;

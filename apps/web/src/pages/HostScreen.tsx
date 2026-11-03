@@ -6,7 +6,7 @@ import { FinalReport, HostIntro, HostResult } from '../games/common';
 import { HOST_VIEWS, STAGE_TONE } from '../games';
 import { enterFullscreen } from '../lib/device';
 import { useSoundCue } from '../lib/hooks';
-import { audioReady, isMuted, setMuted, unlockAudio } from '../lib/sound';
+import { audioReady, GESTURE_EVENTS, isMuted, setMuted, unlockAudio } from '../lib/sound';
 import { useClientSnapshot, useRoomClient, type RoomClient } from '../lib/roomClient';
 import { Link } from '../lib/router';
 import { keys, local } from '../lib/storage';
@@ -75,11 +75,9 @@ function StageSounds({ room }: { room: RoomState }) {
     const unlock = () => {
       if (!isMuted()) void unlockAudio();
     };
-    window.addEventListener('pointerdown', unlock);
-    window.addEventListener('keydown', unlock);
+    for (const ev of GESTURE_EVENTS) window.addEventListener(ev, unlock);
     return () => {
-      window.removeEventListener('pointerdown', unlock);
-      window.removeEventListener('keydown', unlock);
+      for (const ev of GESTURE_EVENTS) window.removeEventListener(ev, unlock);
     };
   }, []);
   useSoundCue(`${room.phase}:${room.index}`, (_a, b) => {

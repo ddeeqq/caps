@@ -17,6 +17,8 @@ export default defineConfig({
     },
   },
   build: {
+    // 오래된 폰도 받아 주도록 문법을 낮춘다: 아이폰 iOS 15(사파리 15), 갤럭시의 삼성 인터넷·크롬 90대
+    target: ['es2020', 'safari15', 'chrome90', 'firefox90'],
     outDir: 'dist',
     sourcemap: true,
     chunkSizeWarningLimit: 600,

@@ -20,9 +20,96 @@ function audio(): { a: AudioContext; out: GainNode } | null {
   return { a: ctx, out: master as GainNode };
 }
 
+const isIOS = (): boolean =>
+  /iP(hone|ad|od)/.test(navigator.userAgent) ||
+  // iPadOS는 맥처럼 보인다
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+/** 0.5초짜리 무음 WAV (8kHz, 8bit). 파일 없이 만든다 */
+function silentWavUrl(): string {
+  const samples = 4_000;
+  const buf = new ArrayBuffer(44 + samples);
+  const v = new DataView(buf);
+  const str = (o: number, s: string) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+  str(0, 'RIFF');
+  v.setUint32(4, 36 + samples, true);
+  str(8, 'WAVEfmt ');
+  v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true); // PCM
+  v.setUint16(22, 1, true); // 모노
+  v.setUint32(24, 8_000, true);
+  v.setUint32(28, 8_000, true);
+  v.setUint16(32, 1, true);
+  v.setUint16(34, 8, true);
+  str(36, 'data');
+  v.setUint32(40, samples, true);
+  for (let i = 0; i < samples; i++) v.setUint8(44 + i, 128); // 8bit 무음 = 128
+  return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+}
+
+let silentTag: HTMLAudioElement | null = null;
+
+/**
+ * 무음 스위치 대책 (iOS 16 이하처럼 audioSession이 없을 때):
+ * <audio> 요소가 재생 중이면 iOS는 페이지를 "미디어 재생 중"으로 보고 Web Audio도 스피커로 낸다.
+ * 무음 파일을 반복 재생해 둔다. 반드시 탭 안에서 불러야 한다.
+ */
+function keepMediaSession(): void {
+  if (silentTag || !isIOS()) return;
+  try {
+    silentTag = document.createElement('audio');
+    silentTag.src = silentWavUrl();
+    silentTag.loop = true;
+    silentTag.setAttribute('playsinline', '');
+    silentTag.setAttribute('x-webkit-airplay', 'deny');
+    silentTag.preload = 'auto';
+    void silentTag.play().catch(() => undefined);
+  } catch {
+    silentTag = null;
+  }
+}
+
+/**
+ * 브라우저가 "사용자가 직접 한 행동"으로 쳐 주는 이벤트. 터치 폰에서는 pointerdown이 아니라
+ * 손을 뗄 때(pointerup·touchend·click)만 소리를 켤 수 있다 (아이폰·갤럭시 공통).
+ */
+export const GESTURE_EVENTS = ['pointerup', 'touchend', 'click', 'keydown'] as const;
+
+/** 첫 터치·클릭·키 입력 때 한 번 fn을 부른다. 해제 함수를 돌려준다 */
+export function onFirstGesture(fn: () => void): () => void {
+  const handler = () => {
+    off();
+    fn();
+  };
+  const off = () => {
+    for (const ev of GESTURE_EVENTS) window.removeEventListener(ev, handler);
+  };
+  for (const ev of GESTURE_EVENTS) window.addEventListener(ev, handler, { passive: true });
+  return off;
+}
+
+let resumeHooked = false;
+
+/**
+ * 전화가 오거나 앱을 오갔다 오면 iOS·안드로이드 모두 오디오가 "interrupted/suspended"로 멈춘다.
+ * 다음 탭이나 화면 복귀 때 조용히 다시 켠다.
+ */
+function hookResume(): void {
+  if (resumeHooked) return;
+  resumeHooked = true;
+  const resume = () => {
+    if (ctx && ctx.state !== 'running' && ctx.state !== 'closed') void ctx.resume().catch(() => undefined);
+    if (silentTag?.paused) void silentTag.play().catch(() => undefined);
+  };
+  for (const ev of GESTURE_EVENTS) window.addEventListener(ev, resume, { passive: true });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') resume();
+  });
+}
+
 export async function unlockAudio(): Promise<boolean> {
   // iOS 사파리는 무음 스위치가 켜져 있으면 Web Audio도 조용해진다.
-  // 오디오 세션을 "재생"으로 두면 무음 모드에서도 소리가 난다 (사파리 16.4+, 없으면 무시)
+  // 오디오 세션을 "재생"으로 두면 무음 모드에서도 소리가 난다 (사파리 17+), 없으면 무음 <audio>로 대신한다
   const session = (navigator as unknown as { audioSession?: { type: string } }).audioSession;
   if (session) {
     try {
@@ -30,7 +117,10 @@ export async function unlockAudio(): Promise<boolean> {
     } catch {
       /* 지원하지 않는 값이면 그대로 둔다 */
     }
+  } else {
+    keepMediaSession();
   }
+  hookResume();
   const au = audio();
   if (!au) return false;
   try {
@@ -270,6 +360,8 @@ const VOICES: Record<string, Voice> = {
 export function playAnimal(soundId: string, variant = 0): void {
   const au = audio();
   if (!au) return;
+  // 탭 안에서 불리므로 멈춰 있던 오디오를 여기서 다시 켤 수 있다 (전화·앱 전환 뒤)
+  if (au.a.state !== 'running') void au.a.resume().catch(() => undefined);
   const voice = VOICES[soundId] ?? VOICES.goat!;
   const t = au.a.currentTime + 0.01;
   const dur = voice(au.a, au.out, t);

@@ -81,15 +81,48 @@ async function acquire(): Promise<boolean> {
   }
 }
 
+/**
+ * Wake Lock이 없는 곳(iOS 16.3 이하, 카카오톡 등 안드로이드 앱 안 브라우저)의 대책:
+ * 보이지 않는 2초짜리 무음 영상을 반복 재생하면 폰이 "영상 보는 중"으로 알고 화면을 끄지 않는다.
+ */
+let awakeVideo: HTMLVideoElement | null = null;
+
+async function playAwakeVideo(): Promise<boolean> {
+  try {
+    if (!awakeVideo) {
+      const v = document.createElement('video');
+      v.src = '/awake.mp4';
+      v.muted = true;
+      v.loop = true;
+      v.setAttribute('playsinline', '');
+      v.setAttribute('webkit-playsinline', '');
+      v.setAttribute('aria-hidden', 'true');
+      v.style.cssText =
+        'position:fixed;left:0;bottom:0;width:1px;height:1px;opacity:0.01;pointer-events:none;z-index:-1';
+      document.body.appendChild(v);
+      awakeVideo = v;
+    }
+    await awakeVideo.play();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const onVisibility = () => {
-  if (wanted && document.visibilityState === 'visible') void acquire();
+  if (!wanted || document.visibilityState !== 'visible') return;
+  // 화면을 떠났다 오면 Wake Lock은 풀린다. 다시 잡고, 영상 대책도 다시 튼다
+  void acquire().then((ok) => {
+    if (!ok || awakeVideo) void playAwakeVideo();
+  });
 };
 
 /** 화면 꺼짐 방지 (카드섹션 등). 탭을 다시 보면 자동으로 다시 잡는다 */
 export async function keepScreenOn(): Promise<boolean> {
   wanted = true;
   document.addEventListener('visibilitychange', onVisibility);
-  return acquire();
+  if (await acquire()) return true;
+  return playAwakeVideo();
 }
 
 export function releaseScreen(): void {
@@ -97,6 +130,11 @@ export function releaseScreen(): void {
   document.removeEventListener('visibilitychange', onVisibility);
   void sentinel?.release().catch(() => undefined);
   sentinel = null;
+  if (awakeVideo) {
+    awakeVideo.pause();
+    awakeVideo.remove();
+    awakeVideo = null;
+  }
 }
 
 export async function enterFullscreen(): Promise<void> {

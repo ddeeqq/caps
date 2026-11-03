@@ -56,7 +56,13 @@
 
 html {
   font-size: 17px;
+  /* 밝은 화면만 쓴다 (강제 다크 모드 방지, index.html의 color-scheme과 짝) */
+  color-scheme: light only;
+  /* 가로로 돌렸을 때 아이폰·갤럭시가 글자를 멋대로 키우지 않게 */
   -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* 빠르게 두 번 누를 때 확대되지 않게 (눈치게임 연타, 레이스 버튼) */
+  touch-action: manipulation;
 }
 
 body {

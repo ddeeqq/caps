@@ -43,6 +43,9 @@ export class RoomClient {
   private listeners = new Set<() => void>();
   private reactionListeners = new Set<(r: ReactionEvent) => void>();
   private auth: (() => void) | null = null;
+  /** open() 뒤 close() 전까지: 폰이 깨어날 때 다시 붙을지 */
+  private wanted = false;
+  private checking = false;
 
   constructor() {
     this.socket = io({ path: '/socket.io', transports: ['websocket', 'polling'], autoConnect: false });
@@ -61,6 +64,32 @@ export class RoomClient {
     this.socket.on('kicked', () => this.patch({ kicked: true }));
     this.socket.on('closed', (reason) => this.patch({ closed: reason }));
   }
+
+  /**
+   * 폰이 잠들었다 깨거나 다른 앱(카카오톡 등)에 갔다 오면, 아이폰은 웹소켓을 조용히 끊고
+   * 소켓은 핑 시간이 지날 때까지(최대 20초) 연결된 줄 안다. 화면이 다시 보이면
+   * 짧게 확인해서 응답이 없으면 바로 다시 붙는다. 뒤로 가기 캐시(bfcache)에서 돌아온 경우도 같다.
+   */
+  private onWake = (): void => {
+    if (!this.wanted || document.visibilityState !== 'visible') return;
+    if (!this.socket.connected) {
+      this.socket.connect();
+      return;
+    }
+    if (this.checking) return;
+    this.checking = true;
+    this.socket.timeout(2_500).emit('clock:ping', performance.now(), (err: Error | null) => {
+      this.checking = false;
+      if (err && this.wanted) {
+        this.socket.disconnect();
+        this.socket.connect();
+      }
+    });
+  };
+
+  private onPageShow = (e: PageTransitionEvent): void => {
+    if (e.persisted) this.onWake();
+  };
 
   private patch(p: Partial<ClientSnapshot>): void {
     this.snap = { ...this.snap, ...p };
@@ -86,12 +115,20 @@ export class RoomClient {
   }
 
   open(): void {
+    this.wanted = true;
     this.clock.start();
+    document.addEventListener('visibilitychange', this.onWake);
+    window.addEventListener('pageshow', this.onPageShow);
+    window.addEventListener('online', this.onWake);
     if (!this.socket.connected) this.socket.connect();
   }
 
   close(): void {
+    this.wanted = false;
     this.clock.stop();
+    document.removeEventListener('visibilitychange', this.onWake);
+    window.removeEventListener('pageshow', this.onPageShow);
+    window.removeEventListener('online', this.onWake);
     this.socket.disconnect();
   }
 

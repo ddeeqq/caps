@@ -27,6 +27,8 @@ export interface RoomSnapshot {
   savedAt: number;
   code: string;
   identity: RoomIdentity;
+  /** 한 판 더로 연 새 방 */
+  rematchCode?: string | null;
   pack: ResolvedPack;
   flow: GameId[];
   settings: RoomSettings;

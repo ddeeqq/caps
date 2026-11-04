@@ -1,12 +1,14 @@
 import type { GameId } from '@caps/shared';
 import type { ComponentType } from 'react';
 import { CardsectionHost, CardsectionPlayer } from './cardsection';
+import { LiarHost, LiarPlayer } from './liar';
 import { MinorityHost, MinorityPlayer } from './minority';
 import { NunchiHost, NunchiPlayer } from './nunchi';
 import { SoundmateHost, SoundmatePlayer } from './soundmate';
 import { TiltraceHost, TiltracePlayer } from './tiltrace';
 import type { GameProps } from './types';
 import { VaultHost, VaultPlayer } from './vault';
+import { WaveHost, WavePlayer } from './wavelength';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyGame = ComponentType<GameProps<any>>;
@@ -18,6 +20,8 @@ export const HOST_VIEWS: Record<GameId, AnyGame> = {
   cardsection: CardsectionHost,
   minority: MinorityHost,
   tiltrace: TiltraceHost,
+  liar: LiarHost,
+  wavelength: WaveHost,
 };
 
 export const PLAYER_VIEWS: Record<GameId, AnyGame> = {
@@ -27,6 +31,8 @@ export const PLAYER_VIEWS: Record<GameId, AnyGame> = {
   cardsection: CardsectionPlayer,
   minority: MinorityPlayer,
   tiltrace: TiltracePlayer,
+  liar: LiarPlayer,
+  wavelength: WavePlayer,
 };
 
 /** 게임마다 큰 화면 무대 색을 바꿔 단계가 바뀐 걸 바로 느끼게 한다 */
@@ -37,4 +43,6 @@ export const STAGE_TONE: Record<GameId, 'sun' | 'night' | 'water' | 'paper' | 'g
   cardsection: 'night',
   minority: 'gum',
   tiltrace: 'water',
+  liar: 'night',
+  wavelength: 'paper',
 };

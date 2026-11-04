@@ -34,6 +34,10 @@ const SETTING_FIELDS: Array<{
   { key: 'minorityRounds', label: '소수결 라운드', unit: '라운드', min: 1, max: 10, game: 'minority' },
   { key: 'minorityTalkSeconds', label: '소수결 작전 타임', unit: '초', min: 5, max: 120, game: 'minority' },
   { key: 'tiltraceLength', label: '레이스 길이', unit: '초 거리', min: 15, max: 120, game: 'tiltrace' },
+  { key: 'liarRounds', label: '라이어 라운드', unit: '라운드', min: 1, max: 6, game: 'liar' },
+  { key: 'liarTalkSeconds', label: '라이어 설명 시간', unit: '초', min: 30, max: 300, game: 'liar' },
+  { key: 'waveRounds', label: '파장 라운드', unit: '라운드', min: 1, max: 8, game: 'wavelength' },
+  { key: 'waveSeconds', label: '파장 한 라운드', unit: '초', min: 20, max: 180, game: 'wavelength' },
 ];
 
 export function HostNew() {

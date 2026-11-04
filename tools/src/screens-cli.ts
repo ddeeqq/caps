@@ -6,6 +6,7 @@
  *   pnpm screens --out screenshots    # 다른 터미널에서
  *
  * 옵션: --url 서버(기본 http://localhost:3001), --web 웹 주소(기본 = url), --bots 봇 수(기본 9),
+ *       --games 찍을 게임만 (예: liar,wavelength. 기본은 전부),
  *       --phone 폰 화면 크기(기본 390x844). 가로 모드는 844x390, 갤럭시 폴드 겉화면 344x882, 펼친 화면 690x830
  * 크롬: CHROME_PATH 환경 변수, 없으면 playwright 기본 경로
  */
@@ -15,11 +16,13 @@ import type {
   CardsectionHostView,
   GameId,
   MinorityHostView,
+  LiarHostView,
   NunchiHostView,
   RoomState,
   SoundmateHostView,
   TiltraceHostView,
   VaultHostView,
+  WaveHostView,
 } from '@caps/shared';
 import { chromium, type Page } from 'playwright-core';
 import { arg } from './args';
@@ -31,6 +34,19 @@ const out = path.resolve(arg('out', 'screenshots'));
 const botCount = Number(arg('bots', '9'));
 const [phoneW, phoneH] = arg('phone', '390x844').split('x').map(Number) as [number, number];
 const executablePath = process.env.CHROME_PATH || undefined;
+const ALL_GAMES: GameId[] = [
+  'nunchi',
+  'soundmate',
+  'vault',
+  'cardsection',
+  'minority',
+  'tiltrace',
+  'liar',
+  'wavelength',
+];
+const games = arg('games', ALL_GAMES.join(','))
+  .split(',')
+  .filter((g): g is GameId => (ALL_GAMES as string[]).includes(g));
 
 let shot = 0;
 async function snap(page: Page, name: string): Promise<void> {
@@ -91,7 +107,7 @@ async function main() {
   await snap(phone, 'sync-test');
 
   console.log('방 만들기');
-  const flow: GameId[] = ['nunchi', 'soundmate', 'vault', 'cardsection', 'minority', 'tiltrace'];
+  const flow: GameId[] = games;
   const host = new AutoHost({
     url,
     create: {
@@ -115,6 +131,10 @@ async function main() {
         minorityTalkSeconds: 6,
         minorityVoteSeconds: 4,
         tiltraceLength: 12,
+        liarRounds: 1,
+        liarTalkSeconds: 25,
+        waveRounds: 1,
+        waveSeconds: 25,
       },
     },
     waitForPlayers: 9999,
@@ -148,130 +168,208 @@ async function main() {
     await until(label, () => room().phase === phase && (!gameId || room().gameId === gameId));
     await sleep(700);
   };
+  /** 다음 게임의 소개 화면으로 (첫 게임이면 시작하기) */
+  const enter = async (gameId: GameId) => {
+    if (room().phase === 'lobby') {
+      await host.command({ type: 'start' });
+      await until(`${gameId} 소개`, () => room().phase === 'intro' && room().gameId === gameId);
+      await sleep(800);
+    } else await step(`${gameId} 소개`, 'intro', gameId);
+  };
 
   // ① 눈치게임
-  console.log('눈치게임');
-  await host.command({ type: 'start' });
-  await until('눈치 소개', () => room().phase === 'intro');
-  await sleep(800);
-  await snap(screen, 'nunchi-intro');
-  await snap(phone, 'phone-nunchi-intro');
-  await step('눈치 시작', 'playing', 'nunchi');
-  await snap(screen, 'nunchi-countdown');
-  await snap(phone, 'phone-nunchi-countdown');
-  await until('버튼 열림', () => view<NunchiHostView>()?.stage === 'open');
-  await sleep(400);
-  await phone.locator('.big-tap').dispatchEvent('pointerdown');
-  await sleep(1_300);
-  await snap(screen, 'nunchi-open');
-  await snap(phone, 'phone-nunchi-tapped');
-  await until('라운드 끝', () => view<NunchiHostView>()?.stage === 'roundEnd', 25_000);
-  await sleep(700);
-  await snap(screen, 'nunchi-outcome');
-  await snap(phone, 'phone-nunchi-verdict');
-  await until('눈치 결과', () => room().phase === 'result', 15_000);
-  await sleep(800);
-  await snap(screen, 'nunchi-result');
+  if (games.includes('nunchi')) {
+    console.log('눈치게임');
+    await enter('nunchi');
+    await snap(screen, 'nunchi-intro');
+    await snap(phone, 'phone-nunchi-intro');
+    await step('눈치 시작', 'playing', 'nunchi');
+    await snap(screen, 'nunchi-countdown');
+    await snap(phone, 'phone-nunchi-countdown');
+    await until('버튼 열림', () => view<NunchiHostView>()?.stage === 'open');
+    await sleep(400);
+    await phone.locator('.big-tap').dispatchEvent('pointerdown');
+    await sleep(1_300);
+    await snap(screen, 'nunchi-open');
+    await snap(phone, 'phone-nunchi-tapped');
+    await until('라운드 끝', () => view<NunchiHostView>()?.stage === 'roundEnd', 25_000);
+    await sleep(700);
+    await snap(screen, 'nunchi-outcome');
+    await snap(phone, 'phone-nunchi-verdict');
+    await until('눈치 결과', () => room().phase === 'result', 15_000);
+    await sleep(800);
+    await snap(screen, 'nunchi-result');
+  }
 
   // ② 소리 짝꿍
-  console.log('소리 짝꿍');
-  await step('소리 소개', 'intro', 'soundmate');
-  await snap(phone, 'phone-soundmate-intro');
-  await step('소리 시작', 'playing', 'soundmate');
-  await sleep(1_500);
-  await snap(phone, 'phone-soundmate');
-  await phone.click('text=내 QR 보여주기');
-  await sleep(600);
-  await snap(phone, 'phone-soundmate-qr');
-  await phone.click('.sheet .btn--small');
-  await until(
-    '팀 완성',
-    () => (view<SoundmateHostView>()?.teams.filter((t) => t.complete).length ?? 0) >= 1,
-    20_000,
-  );
-  await sleep(2_500);
-  await snap(screen, 'soundmate-search');
-  await host.command({ type: 'game', action: 'end-search' });
-  await sleep(1_500);
-  await snap(phone, 'phone-soundmate-team');
-  await phone.locator('.choice').first().click();
-  await sleep(2_500);
-  await snap(screen, 'soundmate-missions');
-  await until('소리 결과', () => room().phase === 'result', 20_000);
+  if (games.includes('soundmate')) {
+    console.log('소리 짝꿍');
+    await enter('soundmate');
+    await snap(phone, 'phone-soundmate-intro');
+    await step('소리 시작', 'playing', 'soundmate');
+    await sleep(1_500);
+    await snap(phone, 'phone-soundmate');
+    await phone.click('text=내 QR 보여주기');
+    await sleep(600);
+    await snap(phone, 'phone-soundmate-qr');
+    await phone.click('.sheet .btn--small');
+    await until(
+      '팀 완성',
+      () => (view<SoundmateHostView>()?.teams.filter((t) => t.complete).length ?? 0) >= 1,
+      20_000,
+    );
+    await sleep(2_500);
+    await snap(screen, 'soundmate-search');
+    await host.command({ type: 'game', action: 'end-search' });
+    await sleep(1_500);
+    await snap(phone, 'phone-soundmate-team');
+    await phone.locator('.choice').first().click();
+    await sleep(2_500);
+    await snap(screen, 'soundmate-missions');
+    await until('소리 결과', () => room().phase === 'result', 20_000);
+  }
 
   // ③ 금고
-  console.log('금고 따기');
-  await step('금고 소개', 'intro', 'vault');
-  await step('금고 시작', 'playing', 'vault');
-  await sleep(2_000);
-  const peek = phone.locator('.peek');
-  if (await peek.count()) {
-    const box = await peek.boundingBox();
-    if (box) {
-      await phone.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-      await phone.mouse.down();
-      await sleep(300);
-      await snap(phone, 'phone-vault-peek');
-      await phone.mouse.up();
+  if (games.includes('vault')) {
+    console.log('금고 따기');
+    await enter('vault');
+    await step('금고 시작', 'playing', 'vault');
+    await sleep(2_000);
+    const peek = phone.locator('.peek');
+    if (await peek.count()) {
+      const box = await peek.boundingBox();
+      if (box) {
+        await phone.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+        await phone.mouse.down();
+        await sleep(300);
+        await snap(phone, 'phone-vault-peek');
+        await phone.mouse.up();
+      }
+    } else {
+      await snap(phone, 'phone-vault-input');
     }
-  } else {
-    await snap(phone, 'phone-vault-input');
+    await sleep(2_500);
+    await snap(screen, 'vault');
+    await host.command({ type: 'game', action: 'finish-now' });
+    await until('금고 결과', () => room().phase === 'result', 10_000);
+    await sleep(700);
+    await snap(screen, 'vault-result');
   }
-  await sleep(2_500);
-  await snap(screen, 'vault');
-  await host.command({ type: 'game', action: 'finish-now' });
-  await until('금고 결과', () => room().phase === 'result', 10_000);
-  await sleep(700);
-  await snap(screen, 'vault-result');
 
   // ④ 카드섹션
-  console.log('카드섹션');
-  await step('카드 소개', 'intro', 'cardsection');
-  await step('카드 시작', 'playing', 'cardsection');
-  await phone.locator('.seat:not(.is-taken)').first().click();
-  await sleep(3_000);
-  await snap(phone, 'phone-seat');
-  await snap(screen, 'cardsection-seat');
-  await host.command({ type: 'game', action: 'start-show' });
-  await until('연출 예약', () => !!view<CardsectionHostView>()?.show);
-  const startAt = view<CardsectionHostView>().show!.startAt;
-  const waitShow = async (ms: number) => {
-    const target = startAt + ms;
-    while (host.clock.serverNow() - host.room!.timeBase < target) await sleep(30);
-  };
-  await waitShow(2_600);
-  await snap(screen, 'cardsection-wave');
-  await snap(phone, 'phone-show-wave');
-  await waitShow(7_600);
-  await snap(screen, 'cardsection-teams');
-  await waitShow(10_500);
-  await snap(screen, 'cardsection-message');
-  await snap(phone, 'phone-show-message');
-  await until('카드 결과', () => room().phase === 'result', 20_000);
+  if (games.includes('cardsection')) {
+    console.log('카드섹션');
+    await enter('cardsection');
+    await step('카드 시작', 'playing', 'cardsection');
+    await phone.locator('.seat:not(.is-taken)').first().click();
+    await sleep(3_000);
+    await snap(phone, 'phone-seat');
+    await snap(screen, 'cardsection-seat');
+    await host.command({ type: 'game', action: 'start-show' });
+    await until('연출 예약', () => !!view<CardsectionHostView>()?.show);
+    const startAt = view<CardsectionHostView>().show!.startAt;
+    const waitShow = async (ms: number) => {
+      const target = startAt + ms;
+      while (host.clock.serverNow() - host.room!.timeBase < target) await sleep(30);
+    };
+    await waitShow(2_600);
+    await snap(screen, 'cardsection-wave');
+    await snap(phone, 'phone-show-wave');
+    await waitShow(7_600);
+    await snap(screen, 'cardsection-teams');
+    await waitShow(10_500);
+    await snap(screen, 'cardsection-message');
+    await snap(phone, 'phone-show-message');
+    await until('카드 결과', () => room().phase === 'result', 20_000);
+  }
 
   // 추가: 소수결
-  console.log('소수결 서바이벌');
-  await step('소수결 소개', 'intro', 'minority');
-  await step('소수결 시작', 'playing', 'minority');
-  await phone.locator('.choice').first().click();
-  await sleep(1_200);
-  await snap(screen, 'minority-talk');
-  await snap(phone, 'phone-minority');
-  await until('소수결 공개', () => view<MinorityHostView>()?.stage === 'reveal', 20_000);
-  await sleep(900);
-  await snap(screen, 'minority-reveal');
-  await until('소수결 결과', () => room().phase === 'result', 20_000);
+  if (games.includes('minority')) {
+    console.log('소수결 서바이벌');
+    await enter('minority');
+    await step('소수결 시작', 'playing', 'minority');
+    await phone.locator('.choice').first().click();
+    await sleep(1_200);
+    await snap(screen, 'minority-talk');
+    await snap(phone, 'phone-minority');
+    await until('소수결 공개', () => view<MinorityHostView>()?.stage === 'reveal', 20_000);
+    await sleep(900);
+    await snap(screen, 'minority-reveal');
+    await until('소수결 결과', () => room().phase === 'result', 20_000);
+  }
 
   // 추가: 레이스
-  console.log('군중 조종 레이스');
-  await step('레이스 소개', 'intro', 'tiltrace');
-  await snap(phone, 'phone-race-intro');
-  await step('레이스 시작', 'playing', 'tiltrace');
-  await until('레이스 출발', () => view<TiltraceHostView>()?.stage === 'race', 10_000);
-  await sleep(3_000);
-  await snap(screen, 'race');
-  await snap(phone, 'phone-race');
-  await until('레이스 결과', () => room().phase === 'result', 40_000);
+  if (games.includes('tiltrace')) {
+    console.log('군중 조종 레이스');
+    await enter('tiltrace');
+    await snap(phone, 'phone-race-intro');
+    await step('레이스 시작', 'playing', 'tiltrace');
+    await until('레이스 출발', () => view<TiltraceHostView>()?.stage === 'race', 10_000);
+    await sleep(3_000);
+    await snap(screen, 'race');
+    await snap(phone, 'phone-race');
+    await until('레이스 결과', () => room().phase === 'result', 40_000);
+  }
+
+  // 추가: 라이어 게임
+  if (games.includes('liar')) {
+    console.log('라이어 게임');
+    await enter('liar');
+    await snap(screen, 'liar-intro');
+    await step('라이어 시작', 'playing', 'liar');
+    await until('라이어 설명', () => view<LiarHostView>()?.stage === 'talk', 15_000);
+    await sleep(800);
+    await snap(screen, 'liar-talk');
+    await snap(phone, 'phone-liar-talk');
+    const secret = await phone.locator('.secret').boundingBox();
+    if (secret) {
+      await phone.mouse.move(secret.x + secret.width / 2, secret.y + secret.height / 2);
+      await phone.mouse.down();
+      await sleep(300);
+      await snap(phone, 'phone-liar-secret');
+      await phone.mouse.up();
+    }
+    await phone.click('text=다 말했어요');
+    await until('라이어 투표', () => view<LiarHostView>()?.stage === 'vote', 30_000);
+    await sleep(600);
+    await phone.locator('.liar-vote__btn').first().click();
+    await sleep(500);
+    await snap(phone, 'phone-liar-vote');
+    await snap(screen, 'liar-vote');
+    await until('라이어 공개', () => view<LiarHostView>()?.stage === 'reveal', 45_000);
+    await sleep(1_200);
+    await snap(screen, 'liar-reveal');
+    await snap(phone, 'phone-liar-reveal');
+    await until('라이어 결과', () => room().phase === 'result', 30_000);
+    await sleep(700);
+    await snap(screen, 'liar-result');
+  }
+
+  // 추가: 파장 맞추기
+  if (games.includes('wavelength')) {
+    console.log('파장 맞추기');
+    await enter('wavelength');
+    await snap(phone, 'phone-wave-intro');
+    await step('파장 시작', 'playing', 'wavelength');
+    await sleep(2_500);
+    const dial = phone.locator('.dial__input');
+    if (await dial.count()) {
+      const box = await dial.boundingBox();
+      if (box) await phone.mouse.click(box.x + box.width * 0.7, box.y + box.height / 2);
+      await sleep(800);
+      await snap(phone, 'phone-wave-guess');
+      await phone.click('text=이걸로 확정');
+    } else {
+      await snap(phone, 'phone-wave-psychic');
+    }
+    await sleep(1_200);
+    await snap(screen, 'wave-guess');
+    await until('파장 공개', () => view<WaveHostView>()?.stage === 'reveal', 40_000);
+    await sleep(1_000);
+    await snap(screen, 'wave-reveal');
+    await snap(phone, 'phone-wave-reveal');
+    await until('파장 결과', () => room().phase === 'result', 30_000);
+  }
 
   // 마무리
   console.log('마무리');
@@ -286,6 +384,16 @@ async function main() {
   await snap(screen, 'final-report');
   await snap(phone, 'phone-thanks');
   const reportId = host.room?.report?.id;
+  // 한 판 더: 큰 화면이 새 방으로 옮겨 가고, 폰에는 "다음 판 들어가기"가 뜬다
+  await screen.click('text=같은 사람들과 한 판 더');
+  await screen.waitForURL((u) => !u.pathname.endsWith(code), { timeout: 10_000 });
+  await sleep(1_500);
+  await snap(screen, 'rematch-lobby');
+  await snap(phone, 'phone-rematch');
+  await phone.click('text=다음 판 들어가기');
+  await phone.waitForSelector('.p-lobby', { timeout: 10_000 });
+  await sleep(800);
+  await snap(phone, 'phone-rematch-lobby');
   if (reportId) {
     await screen.goto(`${web}/report/${reportId}`);
     await sleep(1_200);

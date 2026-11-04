@@ -78,6 +78,27 @@ export function reconcileTeams(ctx: GameCtx): TeamInfo[] {
   return teams;
 }
 
+/**
+ * 테이블에 둘러앉아 하는 게임(라이어, 파장)용 팀: 앞 게임 팀을 이어 쓰되
+ * minSize보다 작은 팀은 다른 팀에 합친다 (같은 종류 — 사람끼리·봇끼리 — 를 먼저 찾는다).
+ */
+export function tableTeams(ctx: GameCtx, minSize: number): TeamInfo[] {
+  const teams = reconcileTeams(ctx).map((t) => ({ ...t, memberIds: [...t.memberIds] }));
+  const isBot = (id: string) => ctx.players.find((p) => p.id === id)?.bot === true;
+  const kind = (t: TeamInfo) => (t.memberIds.every(isBot) ? 'bot' : 'human');
+  for (;;) {
+    const small = [...teams].sort((a, b) => a.memberIds.length - b.memberIds.length)[0];
+    if (!small || small.memberIds.length >= minSize || teams.length < 2) break;
+    const others = teams.filter((t) => t !== small);
+    const same = others.filter((t) => kind(t) === kind(small));
+    const target = smallestTeam(same.length > 0 ? same : others);
+    if (!target) break;
+    target.memberIds.push(...small.memberIds);
+    teams.splice(teams.indexOf(small), 1);
+  }
+  return teams;
+}
+
 export function teamOfPlayer(teams: readonly TeamInfo[], playerId: string): TeamInfo | null {
   return teams.find((t) => t.memberIds.includes(playerId)) ?? null;
 }

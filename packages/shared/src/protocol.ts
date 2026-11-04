@@ -99,6 +99,8 @@ export interface RoomState {
   report: SessionReport | null;
   settings: RoomSettings;
   joinPath: string;
+  /** 진행자가 "한 판 더"로 연 새 방 코드 (끝난 방에서만) */
+  rematch?: string | null;
 }
 
 export type PauseReason = 'host' | 'restart';

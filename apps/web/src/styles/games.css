@@ -1165,3 +1165,475 @@
   transform: translateY(3px);
   box-shadow: 0 1px 0 var(--ink);
 }
+
+/* ════════════ 추가: 라이어 게임 ════════════
+   밤 무대. 테이블 카드가 한 줄에 여러 개 깔리고, 공개 때 카드마다 판정 도장이 찍힌다. */
+.liar-host {
+  position: relative;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.8em;
+  text-align: center;
+}
+.liar-host__head {
+  display: flex;
+  gap: 2.4em;
+  align-items: baseline;
+  font-size: 1.3em;
+  font-weight: 800;
+}
+.liar-host__score b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.5em;
+}
+.liar-host__category {
+  display: grid;
+  justify-items: center;
+  gap: 0.1em;
+}
+.liar-host__category > span {
+  font-size: 1.2em;
+  font-weight: 800;
+  color: var(--stage-muted);
+}
+.liar-host__cat {
+  font-size: 5.2em;
+  line-height: 1.05;
+}
+.liar-host__stage {
+  font-size: 1.6em;
+  font-weight: 800;
+}
+.liar-host__stage b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.5em;
+}
+.liar-host__tables {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14em, 1fr));
+  gap: 0.9em;
+  width: min(80em, 94%);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.liar-table {
+  display: grid;
+  gap: 0.4em;
+  align-content: start;
+  padding: 0.9em 1em;
+  border: 3px solid var(--ink);
+  border-top: 0.6em solid var(--c, var(--gum));
+  border-radius: var(--r-md);
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+}
+.liar-table__name {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  font-size: 1.15em;
+}
+.liar-table .muted {
+  color: var(--ink-3);
+}
+.liar-table__state {
+  font-weight: 750;
+}
+.liar-table__reveal {
+  position: relative;
+  display: grid;
+  gap: 0.2em;
+  font-size: 1.1em;
+}
+.liar-table__reveal b {
+  font-size: 1.15em;
+}
+.liar-table__badge {
+  position: absolute;
+  right: -0.2em;
+  top: -0.3em;
+  font-size: 2em;
+  transform: rotate(8deg);
+  animation: slam 380ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+.liar-table--caught {
+  background: var(--mint-2);
+}
+.liar-table--escaped {
+  background: var(--coral-2);
+}
+.liar-table--stolen {
+  background: var(--sun-2);
+}
+.liar-host .timerbar {
+  width: min(60em, 90%);
+}
+
+.liar-player {
+  display: grid;
+  gap: 14px;
+  text-align: center;
+}
+.liar-player__table {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+}
+.liar-player__title {
+  font-size: clamp(2.6rem, 14vmin, 4rem);
+}
+.liar-player__stage {
+  font-weight: 800;
+  font-size: var(--t-lg);
+}
+.liar-player__stage b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.4em;
+}
+.liar-player__points {
+  font-weight: 800;
+}
+/* 누르고 있을 때만 보이는 카드 */
+.secret {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 6px;
+  min-height: min(260px, 36vh);
+  min-height: min(260px, 36dvh);
+  padding: 20px 16px;
+  border: 4px dashed var(--ink);
+  border-radius: var(--r-lg);
+  background: repeating-linear-gradient(135deg, var(--sun-2) 0 14px, #fff7c7 14px 28px);
+  color: var(--ink);
+  font: inherit;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+}
+.secret.is-open {
+  border-style: solid;
+  background: var(--paper);
+  box-shadow: inset 0 0 0 6px var(--c, var(--sun));
+}
+.secret--liar.is-open {
+  background: var(--coral-2);
+}
+.secret__eye {
+  font-size: 3rem;
+  line-height: 1;
+}
+.secret__label {
+  font-weight: 800;
+  font-size: var(--t-lg);
+}
+.secret__word {
+  font-size: clamp(2.6rem, 15vmin, 4.4rem);
+  line-height: 1.1;
+  word-break: keep-all;
+}
+.secret__hint {
+  color: var(--ink-2);
+  font-weight: 650;
+}
+.liar-order {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.liar-order li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 4px 4px;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-pill);
+  background: var(--paper);
+  font-weight: 750;
+}
+.liar-order li:first-child {
+  background: var(--sun);
+}
+.liar-order__n {
+  display: grid;
+  place-items: center;
+  width: 1.6em;
+  height: 1.6em;
+  border-radius: 50%;
+  background: var(--c, var(--ink));
+  color: var(--paper);
+  font-size: var(--t-sm);
+  font-weight: 850;
+  text-shadow: 0 0 2px var(--ink);
+}
+.liar-vote,
+.liar-guess {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.liar-vote__btn {
+  grid-auto-flow: column;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding-block: 18px;
+}
+
+/* ════════════ 추가: 파장 맞추기 ════════════
+   눈금 막대 하나가 주인공. 차가운 소다색에서 뜨거운 코랄색으로 번지는 막대 위에
+   점수 구역(정답 공개 때), 팀원 바늘(작은 점), 팀 답(검은 바늘)을 겹쳐 그린다. */
+.dial {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+}
+.dial__ends {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-weight: 850;
+  font-size: var(--t-lg);
+}
+.dial__ends span:last-child {
+  text-align: right;
+}
+.dial__track {
+  position: relative;
+  height: 56px;
+  border: 3px solid var(--ink);
+  border-radius: var(--r-pill);
+  background: linear-gradient(
+    90deg,
+    var(--soda) 0%,
+    var(--soda-2) 38%,
+    var(--sun-2) 50%,
+    var(--coral-2) 62%,
+    var(--coral) 100%
+  );
+  overflow: hidden;
+}
+.dial--lg .dial__track {
+  height: 76px;
+}
+.dial__band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+.dial__band--2 {
+  background: rgb(255 255 255 / 55%);
+}
+.dial__band--3 {
+  background: rgb(61 217 160 / 75%);
+}
+.dial__band--4 {
+  background: var(--ink);
+}
+.dial__mark {
+  position: absolute;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+}
+.dial__needle {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 8px;
+  margin-left: -4px;
+  border-radius: 4px;
+  background: var(--ink);
+  box-shadow: 0 0 0 3px var(--paper);
+  transition: left 160ms ease-out;
+}
+/* 막대 전체가 손잡이: 어디를 눌러도 그 자리로 간다 */
+.dial__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  touch-action: none;
+}
+.dial__input:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.dial__input::-webkit-slider-runnable-track {
+  height: 100%;
+  background: transparent;
+}
+.dial__input::-moz-range-track {
+  height: 100%;
+  background: transparent;
+}
+.dial__input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 34px;
+  height: 100%;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  background: var(--paper);
+  box-shadow: 0 0 0 3px var(--gum);
+}
+.dial__input::-moz-range-thumb {
+  width: 30px;
+  height: 100%;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  background: var(--paper);
+  box-shadow: 0 0 0 3px var(--gum);
+}
+.dial__input[data-unset]::-webkit-slider-thumb {
+  opacity: 0;
+}
+.dial__input[data-unset]::-moz-range-thumb {
+  opacity: 0;
+}
+
+.wave-host {
+  position: relative;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.8em;
+  text-align: center;
+}
+.wave-host > .dial {
+  width: min(70em, 92%);
+  font-size: 1.6em;
+}
+.wave-host > .dial .dial__ends {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.6em;
+}
+.wave-host__head {
+  display: flex;
+  gap: 2.4em;
+  font-size: 1.3em;
+  font-weight: 800;
+}
+.wave-host__head b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.4em;
+}
+.wave-host__how {
+  font-size: 1.3em;
+  font-weight: 750;
+  min-height: 1.5em;
+}
+.wave-host__tables {
+  display: grid;
+  gap: 0.6em;
+  width: min(70em, 92%);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.wave-row {
+  display: grid;
+  grid-template-columns: 15em 1fr 5em;
+  align-items: center;
+  gap: 1em;
+  padding: 0.6em 1em;
+  border: 3px solid var(--ink);
+  border-left: 0.6em solid var(--c, var(--gum));
+  border-radius: var(--r-md);
+  background: var(--paper);
+  text-align: left;
+}
+.wave-row__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2em 0.5em;
+}
+.wave-row__name .muted {
+  width: 100%;
+  color: var(--ink-3);
+  font-size: 0.9em;
+}
+.wave-row__state {
+  font-weight: 750;
+}
+.wave-row__result {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 0.8em;
+}
+.wave-row__result .dial__ends {
+  font-size: 0.85em;
+}
+.wave-row__result .dial__track {
+  height: 34px;
+}
+.wave-row__pts {
+  font-size: 2.2em;
+  animation: slam 380ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+.wave-row__total {
+  font-family: var(--font-display);
+  font-size: 1.8em;
+  text-align: right;
+}
+
+.wave-player {
+  display: grid;
+  gap: 14px;
+  text-align: center;
+}
+.wave-player__table {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+}
+.wave-player__title {
+  font-size: clamp(2.4rem, 13vmin, 3.8rem);
+}
+.wave-player__stage {
+  font-weight: 800;
+  font-size: var(--t-lg);
+}
+.wave-player__stage b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.3em;
+}
+.wave-player__say {
+  font-size: var(--t-lg);
+  font-weight: 700;
+}
+.wave-host__spectrum {
+  font-family: var(--font-display);
+  font-size: 2.6em;
+  line-height: 1.2;
+}
+.wave-host__spectrum span {
+  color: var(--gum);
+}

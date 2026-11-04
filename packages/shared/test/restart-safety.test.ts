@@ -8,7 +8,7 @@ import { makeCtx } from './helpers';
 
 /**
  * 서버 재시작 복구는 게임 상태를 JSON으로 저장했다가 되살린다.
- * 게임 6종을 봇 8명으로 가상 시계 위에서 끝까지 돌리면서, 매 순간 상태를 JSON으로 왕복시켜도
+ * 게임 전부를 봇 8명으로 가상 시계 위에서 끝까지 돌리면서, 매 순간 상태를 JSON으로 왕복시켜도
  * (= 아무 때나 서버가 꺼졌다 켜져도) 왕복하지 않은 판과 결과가 똑같은지 확인한다.
  */
 const FAST = {
@@ -23,6 +23,10 @@ const FAST = {
   minorityTalkSeconds: 3,
   minorityVoteSeconds: 3,
   tiltraceLength: 6,
+  liarRounds: 2,
+  liarTalkSeconds: 12,
+  waveRounds: 2,
+  waveSeconds: 12,
 };
 
 const STEP_MS = 50;

@@ -308,4 +308,8 @@ export const FAST_SETTINGS = {
   minorityTalkSeconds: 3,
   minorityVoteSeconds: 3,
   tiltraceLength: 6,
+  liarRounds: 1,
+  liarTalkSeconds: 8,
+  waveRounds: 2,
+  waveSeconds: 8,
 } as const;

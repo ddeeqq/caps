@@ -1,10 +1,12 @@
 import { cardsection } from './cardsection';
+import { liar } from './liar';
 import { minority } from './minority';
 import { nunchi } from './nunchi';
 import { soundmate } from './soundmate';
 import { tiltrace } from './tiltrace';
 import type { GameId, GameMeta, GameModule } from './types';
 import { vault } from './vault';
+import { wavelength } from './wavelength';
 
 export const GAMES: Record<GameId, GameModule> = {
   nunchi,
@@ -13,6 +15,8 @@ export const GAMES: Record<GameId, GameModule> = {
   cardsection,
   minority,
   tiltrace,
+  liar,
+  wavelength,
 };
 
 export const GAME_META: Record<GameId, GameMeta> = Object.fromEntries(

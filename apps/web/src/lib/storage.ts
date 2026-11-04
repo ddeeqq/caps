@@ -26,6 +26,8 @@ export const local = {
 export const keys = {
   player: (code: string) => `malmun:player:${code}`,
   host: (code: string) => `malmun:host:${code}`,
+  /** 한 판 더로 옮겨 가는 새 방: 닉네임 화면 없이 바로 들어간다 */
+  autoJoin: (code: string) => `malmun:auto:${code}`,
   packEdit: (code: string) => `malmun:pack:${code}`,
   nickname: 'malmun:nickname',
   lastPreset: 'malmun:preset',

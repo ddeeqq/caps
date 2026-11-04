@@ -10,11 +10,13 @@
  * 사람은 허브에 정보를 올리지 않으므로 봇이 사람의 정보를 엿보는 일은 없다.
  */
 import type { CardsectionPlayerView } from './games/cardsection';
+import type { LiarPlayerView } from './games/liar';
 import type { MinorityPlayerView } from './games/minority';
 import type { NunchiPlayerView } from './games/nunchi';
 import type { SoundmatePlayerView } from './games/soundmate';
 import type { TiltracePlayerView } from './games/tiltrace';
 import { applyRule, VAULT_LEVELS, type VaultPlayerView, type VaultRule } from './games/vault';
+import type { WavePlayerView } from './games/wavelength';
 import { REACTION_KINDS, type ReactionKind, type RoomPhase, type ViewEnvelope } from './protocol';
 import type { SurveyAnswer } from './schemas';
 
@@ -54,10 +56,22 @@ export class BotHub {
     return v;
   }
 
+  /** 파장 맞추기: 봇 출제자가 "말로 한 힌트" 대신 목표 지점을 남긴다 */
+  private hints = new Map<string, number>();
+
+  setHint(key: string, value: number): void {
+    this.hints.set(key, value);
+  }
+
+  hint(key: string): number | undefined {
+    return this.hints.get(key);
+  }
+
   /** 게임이 바뀌면 지난 게임의 메모를 지운다 */
   reset(): void {
     this.sounds.clear();
     this.vault.clear();
+    this.hints.clear();
   }
 }
 
@@ -185,6 +199,10 @@ export class BotBrain {
         return this.minority(env.view as MinorityPlayerView);
       case 'tiltrace':
         return this.tiltrace(env.view as TiltracePlayerView);
+      case 'liar':
+        return this.liar(env.view as LiarPlayerView);
+      case 'wavelength':
+        return this.wavelength(env.view as WavePlayerView);
     }
   }
 
@@ -286,5 +304,47 @@ export class BotBrain {
     this.counters.tilt += 1;
     this.tilt = Math.max(-1, Math.min(1, this.tilt * 0.8 + (this.random() - 0.5) * 0.8 - v.x * 0.3));
     return { type: 'tilt', v: Math.round(this.tilt * 100) / 100 };
+  }
+
+  private liar(v: LiarPlayerView): unknown | null {
+    if (!v.seated) return null;
+    const key = `liar:${v.round}`;
+    if (v.stage === 'talk' && !v.ready && this.ready(`${key}:ready`, 3_000, 9_000)) {
+      this.done(`${key}:ready`);
+      return { type: 'ready' };
+    }
+    if (v.stage === 'vote' && !v.myVote && this.ready(`${key}:vote`, 800, 4_000)) {
+      this.done(`${key}:vote`, 2_000);
+      const others = v.order.filter((p) => p.id !== this.playerId);
+      const pick = others[Math.floor(this.random() * others.length)];
+      return pick ? { type: 'vote', target: pick.id } : null;
+    }
+    if (v.stage === 'guess' && v.options && !v.myGuess && this.ready(`${key}:guess`, 1_500, 5_000)) {
+      this.done(`${key}:guess`, 2_000);
+      return { type: 'guess', word: v.options[Math.floor(this.random() * v.options.length)] };
+    }
+    return null;
+  }
+
+  private wavelength(v: WavePlayerView): unknown | null {
+    if (!v.seated || v.stage !== 'guess') return null;
+    const hub = this.opts.hub;
+    const key = `wave:${v.tableName}:${v.round}`;
+    if (v.isPsychic) {
+      if (v.target !== null) hub?.setHint(key, v.target);
+      return null;
+    }
+    if (v.locked) return null;
+    const hint = hub?.hint(key);
+    if (v.myGuess === null) {
+      if (hint === undefined || !this.ready(`${key}:dial`, 1_000, 4_000)) return null;
+      const noise = (this.random() - 0.5) * (this.opts.mistakes === false ? 6 : 30);
+      return { type: 'dial', v: Math.max(0, Math.min(100, Math.round(hint + noise))) };
+    }
+    if (this.ready(`${key}:lock`, 1_000, 3_000)) {
+      this.done(`${key}:lock`, 2_000);
+      return { type: 'lock' };
+    }
+    return null;
   }
 }

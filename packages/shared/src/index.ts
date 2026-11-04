@@ -26,3 +26,6 @@ export * from './games/vault';
 export * from './games/cardsection';
 export * from './games/minority';
 export * from './games/tiltrace';
+export * from './games/liar';
+export * from './games/wavelength';
+export * from './games/words';

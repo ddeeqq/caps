@@ -82,4 +82,15 @@ describe('봇 전체 플레이', () => {
     expect(minority!.metrics.rounds).toBeGreaterThanOrEqual(1);
     expect(race!.ranking!.length).toBeGreaterThanOrEqual(2);
   });
+
+  it('추가 게임: 라이어 게임 → 파장 맞추기 (테이블 팀을 이어 쓴다)', async () => {
+    const { final } = await playThrough(['liar', 'wavelength'], 8);
+    const report = final.report!;
+    expect(report.games.map((g) => g.gameId)).toEqual(['liar', 'wavelength']);
+    const [liarSum, wave] = report.games;
+    const m = liarSum!.metrics;
+    expect((m.caught ?? 0) + (m.escaped ?? 0) + (m.stolen ?? 0)).toBe(liarSum!.teams!.length);
+    expect(wave!.metrics.rounds).toBe(2);
+    expect(wave!.teams!.map((x) => x.id).sort()).toEqual(liarSum!.teams!.map((x) => x.id).sort());
+  });
 });

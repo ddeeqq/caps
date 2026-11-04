@@ -135,6 +135,11 @@ export function registerSocketHandlers(io: IO, manager: RoomManager, storage: St
       if (parsed.data.type === 'kick') {
         return reply(manager.kick(room, parsed.data.playerId) ? { ok: true } : errorAck('BAD_REQUEST'));
       }
+      if (parsed.data.type === 'rematch') {
+        const next = manager.rematch(room, MAX_ROOMS);
+        if (typeof next === 'string') return reply(errorAck(next));
+        return reply({ ok: true });
+      }
       const before = room.phase;
       const err = room.command(parsed.data);
       if (err) return reply(errorAck(err));

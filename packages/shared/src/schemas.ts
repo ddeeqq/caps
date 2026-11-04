@@ -27,6 +27,10 @@ export const settingsSchema = z
     minorityTalkSeconds: z.number().int().min(2).max(120),
     minorityVoteSeconds: z.number().int().min(2).max(60),
     tiltraceLength: z.number().int().min(5).max(120),
+    liarRounds: z.number().int().min(1).max(6),
+    liarTalkSeconds: z.number().int().min(2).max(300),
+    waveRounds: z.number().int().min(1).max(8),
+    waveSeconds: z.number().int().min(2).max(180),
   })
   .partial();
 
@@ -95,6 +99,8 @@ export const hostCommandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('clearBots') }),
   /** 큰 화면·리포트에서 한 줄 소감 하나를 숨긴다 (진행자 판단) */
   z.object({ type: z.literal('hideQuote'), text: z.string().max(200) }),
+  /** 끝난 방에서 같은 구성으로 새 방을 열고, 참가자 폰에 "다음 판 들어가기"를 띄운다 */
+  z.object({ type: z.literal('rematch') }),
 ]);
 export type HostCommand = z.infer<typeof hostCommandSchema>;
 

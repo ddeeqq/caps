@@ -199,6 +199,31 @@ export class RoomManager {
     return true;
   }
 
+  /**
+   * 한 판 더: 끝난 방과 같은 팩·게임 순서·설정으로 새 방을 연다.
+   * 진행자 토큰과 PIN을 그대로 넘겨서 큰 화면·리모컨이 다시 로그인하지 않고 옮겨 가고,
+   * 끝난 방에 새 코드를 남겨 참가자 폰에 "다음 판 들어가기"가 뜬다. 봇도 같은 수만큼 다시 넣는다.
+   * 두 번 눌러도 방은 하나만 생긴다.
+   */
+  rematch(room: Room, maxRooms = Infinity): Room | 'INVALID_STATE' | 'SERVER_BUSY' {
+    if (room.phase !== 'finished') return 'INVALID_STATE';
+    const existing = room.rematchCode ? this.get(room.rematchCode) : undefined;
+    if (existing) return existing;
+    if (this.rooms.size >= maxRooms) return 'SERVER_BUSY';
+    const next = this.createRoom({
+      pack: room.pack,
+      flow: room.flow,
+      settings: room.settings,
+      host: { token: room.hostToken, pin: room.hostPin },
+    });
+    const bots = room.botCount();
+    if (bots > 0) next.addBots(bots);
+    room.rematchCode = next.code;
+    room.touch();
+    this.log.info(`한 판 더 ${room.code} → ${next.code}`);
+    return next;
+  }
+
   /** 세션 기록 저장 예약 (설문이 연달아 들어와도 한 번만 쓰도록 2초 모아서) */
   scheduleReport(room: Room): void {
     if (!this.reportDue.has(room.code)) this.reportDue.set(room.code, Date.now() + REPORT_DEBOUNCE_MS);

@@ -1,10 +1,12 @@
 import type {
   CardsectionHostView,
   HostCommand,
+  LiarHostView,
   MinorityHostView,
   RoomState,
   SoundmateHostView,
   ViewEnvelope,
+  WaveHostView,
 } from '@caps/shared';
 import type { RoomClient } from '../lib/roomClient';
 
@@ -80,6 +82,31 @@ export function hostActions(
             label: '작전 타임 끝',
             tone: 'sun',
             cmd: { type: 'game', action: 'skip-talk' },
+          });
+      } else if (env?.gameId === 'liar') {
+        const v = env.view as LiarHostView;
+        if (v.stage === 'talk' || v.stage === 'word')
+          extra.push({
+            id: 'liar-skip-talk',
+            label: '토론 끝, 투표로',
+            tone: 'sun',
+            cmd: { type: 'game', action: 'skip-talk' },
+          });
+        else if (v.stage === 'vote')
+          extra.push({
+            id: 'liar-end-vote',
+            label: '투표 마감',
+            tone: 'sun',
+            cmd: { type: 'game', action: 'end-vote' },
+          });
+      } else if (env?.gameId === 'wavelength') {
+        const v = env.view as WaveHostView;
+        if (v.stage === 'guess')
+          extra.push({
+            id: 'wave-end',
+            label: '마감하고 공개',
+            tone: 'sun',
+            cmd: { type: 'game', action: 'end-guess' },
           });
       } else if (env?.gameId === 'vault') {
         extra.push({

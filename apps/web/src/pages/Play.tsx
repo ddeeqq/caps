@@ -8,6 +8,7 @@ import { api } from '../lib/api';
 import { useClientSnapshot, useRoomClient, type RoomClient } from '../lib/roomClient';
 import { Link, navigate } from '../lib/router';
 import { onFirstGesture, unlockAudio } from '../lib/sound';
+import { joinRematch } from '../lib/rematch';
 import { keys, local } from '../lib/storage';
 
 export function Play({ code }: { code?: string }) {
@@ -58,8 +59,10 @@ type JoinError = { code: string; message: string };
 function PlayRoom({ code }: { code: string }) {
   const client = useRoomClient();
   const snap = useClientSnapshot(client);
+  // 한 판 더로 넘어온 경우: 닉네임 화면 없이 지난 판 이름으로 바로 들어간다
+  const [auto] = useState(() => local.get(keys.autoJoin(code)) === '1' && !!local.get(keys.nickname));
   const [stage, setStage] = useState<'name' | 'joining' | 'in' | 'error'>(() =>
-    local.get(keys.player(code)) ? 'joining' : 'name',
+    local.get(keys.player(code)) || auto ? 'joining' : 'name',
   );
   const [nickname, setNickname] = useState(() => local.get(keys.nickname) ?? '');
   const [error, setError] = useState<JoinError | null>(null);
@@ -94,9 +97,13 @@ function PlayRoom({ code }: { code: string }) {
       // 닉네임도 같이 보낸다: 서버가 재시작됐거나 같은 코드의 새 방이면 토큰을 모르니, 같은 이름으로 새로 들어간다
       const nickname = local.get(keys.nickname) ?? undefined;
       if (token) void join({ token, nickname });
+      else if (auto && nickname) {
+        local.remove(keys.autoJoin(code));
+        void join({ nickname });
+      }
     });
     return () => client.setAuth(null);
-  }, [client, code, join]);
+  }, [client, code, join, auto]);
 
   // 첫 탭에 오디오를 풀어 둔다 (브라우저 정책)
   useEffect(() => {
@@ -214,6 +221,18 @@ function PlayerShell({ client }: { client: RoomClient }) {
         {room.phase === 'intro' && env && <PlayerIntro gameId={env.gameId} />}
         {Game && env && <Game view={env.view} client={client} room={room} />}
         {room.phase === 'result' && <PlayerResult summary={env?.summary ?? null} />}
+        {room.phase === 'finished' && room.rematch && (
+          <section className="p-rematch" aria-live="polite">
+            <p>진행자가 한 판 더 열었어요!</p>
+            <button
+              type="button"
+              className="btn btn--primary btn--block"
+              onClick={() => joinRematch(room.rematch!)}
+            >
+              다음 판 들어가기
+            </button>
+          </section>
+        )}
         {room.phase === 'finished' && <EndSurvey client={client} met={room.you?.met ?? []} />}
       </main>
       {showReactions && (
@@ -359,6 +378,9 @@ function EndSurvey({ client, met }: { client: RoomClient; met: MetPerson[] }) {
       >
         보내기
       </button>
+      <Link to="/" className="btn btn--quiet p-end__skip">
+        설문 건너뛰고 나가기
+      </Link>
     </section>
   );
 }

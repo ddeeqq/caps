@@ -244,6 +244,31 @@
     height: 60px;
   }
 
+  /* 라이어: 비밀 카드는 왼쪽, 순서·버튼은 오른쪽 */
+  .liar-player:has(> .secret) {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 24px;
+    align-items: center;
+  }
+  .liar-player:has(> .secret) > * {
+    grid-column: 2;
+  }
+  .liar-player:has(> .secret) > .secret {
+    grid-column: 1;
+    grid-row: 1 / span 4;
+    min-height: calc(100vh - 110px);
+    min-height: calc(100dvh - 110px);
+  }
+  .liar-vote,
+  .liar-guess {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  /* 파장: 막대를 넓게, 글은 짧게 */
+  .wave-player {
+    gap: 8px;
+  }
+
   /* 끝 설문: 두 질문을 나란히 */
   .p-end:has(> .panel ~ .panel) {
     grid-template-columns: 1fr 1fr;

@@ -24,7 +24,7 @@ export const PACK_STARTERS: readonly PackStarter[] = [
     description: '처음 보는 동기들. 학교생활 공감 질문으로',
     preset: 'class',
     packName: '신입생 OT',
-    flow: ['nunchi', 'soundmate', 'vault', 'cardsection'],
+    flow: ['nunchi', 'soundmate', 'liar', 'cardsection'],
     content: {
       keywords: ['학식', '도서관', '기숙사', '동아리방', '시간표', '중간고사'],
       balanceQuestions: [
@@ -66,7 +66,7 @@ export const PACK_STARTERS: readonly PackStarter[] = [
     description: '이미 아는 팀. 일하는 방식 이야기로',
     preset: 'work',
     packName: '팀 워크숍',
-    flow: ['nunchi', 'soundmate', 'vault', 'tiltrace', 'cardsection'],
+    flow: ['nunchi', 'soundmate', 'wavelength', 'tiltrace', 'cardsection'],
     content: {
       keywords: ['마감', '회고', '스프린트', '화이트보드', '아이디어', '데모'],
       balanceQuestions: [

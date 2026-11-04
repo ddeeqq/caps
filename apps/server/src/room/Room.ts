@@ -70,6 +70,8 @@ export interface RoomOptions {
   settings: RoomSettings;
   /** 저장본에서 되살릴 때만 */
   identity?: RoomIdentity;
+  /** 한 판 더: 앞 방의 진행자 토큰·PIN을 그대로 써서 진행자 기기들이 바로 붙게 한다 */
+  host?: { token: string; pin: string };
 }
 
 const average = (xs: number[]): number | null =>
@@ -106,6 +108,8 @@ export class Room {
   kickedTokens = new Set<string>();
   /** 진행자가 숨긴 한 줄 소감 */
   hiddenQuotes = new Set<string>();
+  /** 한 판 더로 연 새 방 코드 */
+  rematchCode: string | null = null;
   hostSockets = new Set<string>();
   remoteSockets = new Set<string>();
   teams: TeamInfo[] | null = null;
@@ -131,8 +135,8 @@ export class Room {
 
   constructor(opts: RoomOptions) {
     this.code = opts.code;
-    this.hostToken = opts.identity?.hostToken ?? newToken();
-    this.hostPin = opts.identity?.hostPin ?? newPin();
+    this.hostToken = opts.identity?.hostToken ?? opts.host?.token ?? newToken();
+    this.hostPin = opts.identity?.hostPin ?? opts.host?.pin ?? newPin();
     this.sessionId = opts.identity?.sessionId ?? `${newId()}${newId()}`;
     this.createdAt = opts.identity?.createdAt ?? Date.now();
     this.pack = opts.pack;
@@ -428,6 +432,8 @@ export class Room {
       case 'hideQuote':
         this.hiddenQuotes.add(cmd.text);
         return null;
+      case 'rematch':
+        return null; // 새 방을 만들어야 해서 RoomManager에서 다룬다
     }
   }
 
@@ -651,6 +657,7 @@ export class Room {
       report: isHost && this.phase === 'finished' ? this.report() : null,
       settings: this.settings,
       joinPath: `/play/${this.code}`,
+      rematch: this.rematchCode,
     };
   }
 
@@ -684,6 +691,7 @@ export class Room {
         sessionId: this.sessionId,
         createdAt: this.createdAt,
       },
+      rematchCode: this.rematchCode,
       pack: this.pack,
       flow: this.flow,
       settings: this.settings,
@@ -736,6 +744,7 @@ export class Room {
     room.phaseSince = snap.phaseSince;
     room.kickedTokens = new Set(snap.kickedTokens);
     room.hiddenQuotes = new Set(snap.hiddenQuotes ?? []);
+    room.rematchCode = snap.rematchCode ?? null;
     room.teams = snap.teams;
     room.summaries = snap.summaries;
     room.pauseAccum = snap.pauseAccum;

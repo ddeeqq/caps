@@ -1,6 +1,7 @@
 import { GAME_META, type RoomState } from '@caps/shared';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { EndNav } from '../components/EndNav';
 import { Caption, QRImage, ReactionLayer, Spinner, Stickers, Wordmark } from '../components/ui';
 import { FinalReport, HostIntro, HostResult } from '../games/common';
 import { HOST_VIEWS, STAGE_TONE } from '../games';
@@ -8,6 +9,7 @@ import { enterFullscreen } from '../lib/device';
 import { useSoundCue } from '../lib/hooks';
 import { audioReady, GESTURE_EVENTS, isMuted, setMuted, unlockAudio } from '../lib/sound';
 import { useClientSnapshot, useRoomClient, type RoomClient } from '../lib/roomClient';
+import { useFollowRematch } from '../lib/rematch';
 import { Link } from '../lib/router';
 import { keys, local } from '../lib/storage';
 import { hostActions, runAction, type ConfirmFn, type HostAction } from './hostActions';
@@ -273,6 +275,7 @@ export function HostScreen({ code }: { code: string }) {
 
   const room = snap.room;
   const env = snap.view;
+  useFollowRematch(room, 'host');
 
   if (authError) {
     return (
@@ -343,6 +346,7 @@ export function HostScreen({ code }: { code: string }) {
             onHideQuote={(text) => void client.command({ type: 'hideQuote', text })}
           />
         )}
+        {room.phase === 'finished' && <EndNav room={room} client={client} kind="host" />}
       </main>
       {room.paused && (
         <div className="pause-cover" aria-live="polite">

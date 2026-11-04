@@ -2,6 +2,8 @@ import { GAME_META, hostScript, type RoomState, type ViewEnvelope } from '@caps/
 import { useEffect, useState, type FormEvent } from 'react';
 import { Spinner, Wordmark } from '../components/ui';
 import { useClientSnapshot, useRoomClient } from '../lib/roomClient';
+import { EndNav } from '../components/EndNav';
+import { useFollowRematch } from '../lib/rematch';
 import { Link } from '../lib/router';
 import { keys, local } from '../lib/storage';
 import { hostActions, runAction, type HostAction } from './hostActions';
@@ -104,6 +106,7 @@ export function Remote({ code: initialCode }: { code?: string }) {
   };
 
   const room = snap.room;
+  useFollowRematch(room, 'remote');
   if (!token) {
     return (
       <main className="phone-page">
@@ -204,6 +207,7 @@ export function Remote({ code: initialCode }: { code?: string }) {
           </ul>
         </section>
       )}
+      {room.phase === 'finished' && <EndNav room={room} client={client} kind="remote" />}
       {primary && (
         <button
           type="button"

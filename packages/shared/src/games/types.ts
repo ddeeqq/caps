@@ -3,7 +3,8 @@ import type { PackContent } from '../pack/types';
 import type { Rng } from '../util/rng';
 import type { TeamInfo } from '../util/teams';
 
-export type GameId = 'nunchi' | 'soundmate' | 'vault' | 'cardsection' | 'minority' | 'tiltrace';
+export type GameId =
+  'nunchi' | 'soundmate' | 'vault' | 'cardsection' | 'minority' | 'tiltrace' | 'liar' | 'wavelength';
 export const GAME_IDS: readonly GameId[] = [
   'nunchi',
   'soundmate',
@@ -11,6 +12,8 @@ export const GAME_IDS: readonly GameId[] = [
   'cardsection',
   'minority',
   'tiltrace',
+  'liar',
+  'wavelength',
 ];
 
 /** 설계서의 기본 진행 순서: 웃음 → 섞임 → 협동 → 일체감 */
@@ -37,6 +40,14 @@ export interface RoomSettings {
   minorityVoteSeconds: number;
   /** 군중 조종 레이스 코스 길이 (최고 속도로 몇 초 거리인지) */
   tiltraceLength: number;
+  /** 라이어 게임 라운드 (라운드마다 라이어와 제시어가 바뀐다) */
+  liarRounds: number;
+  /** 라이어 게임 설명·토론 시간 (초) */
+  liarTalkSeconds: number;
+  /** 파장 맞추기 라운드 (라운드마다 출제자가 바뀐다) */
+  waveRounds: number;
+  /** 파장 맞추기 한 라운드 시간 (초) */
+  waveSeconds: number;
 }
 
 export const DEFAULT_SETTINGS: RoomSettings = {
@@ -52,6 +63,10 @@ export const DEFAULT_SETTINGS: RoomSettings = {
   minorityTalkSeconds: 20,
   minorityVoteSeconds: 10,
   tiltraceLength: 45,
+  liarRounds: 2,
+  liarTalkSeconds: 90,
+  waveRounds: 3,
+  waveSeconds: 60,
 };
 
 export interface GamePlayer {

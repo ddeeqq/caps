@@ -13,6 +13,8 @@
     "dev:https": "HTTPS=1 pnpm dev",
     "build": "pnpm --filter @caps/web build && pnpm --filter @caps/server build",
     "start": "pnpm --filter @caps/server start",
+    "serve:public": "node scripts/serve-public.mjs",
+    "serve:lan": "node scripts/serve-public.mjs --lan",
     "test": "pnpm -r --workspace-concurrency=1 test",
     "typecheck": "pnpm -r typecheck",
     "bots": "pnpm --filter @caps/tools bots",
